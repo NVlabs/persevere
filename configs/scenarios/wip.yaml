@@ -1,0 +1,71 @@
+- type: on_intersection
+  subtype: Misdetection/Size
+  log: 2021.05.12.23.36.44_veh-35_00152_00504
+  name: 774b363fa5e95114
+  score: good
+  failures:
+  - Misdetection('52d82117c3a255b2', Offset(0, 0.5, 0.1), Size(0.5, 0.2, 0.1))
+- type: accelerating_at_traffic_light_with_lead
+  subtype: MissingObstacle/NotInPath
+  log: 2021.06.03.12.02.06_veh-35_00233_00609
+  name: eca2ff07a9d95304
+  score: good
+  failures:
+  - Flickering(MissedObstacle('b89b1f6d4a3a509f'))
+- type: stopping_at_traffic_light_without_lead
+  subtype: TrafficLightMisdetection
+  log: 2021.06.09.11.54.15_veh-12_04366_04810
+  name: a5105d1e49b65cd8
+  score: great
+  failures:
+  - TrafficLightMisdetection('proximal', state='green')
+- type: near_multiple_vehicles
+  subtype: MissingObstacle/InPath
+  log: 2021.10.06.17.43.07_veh-28_00508_00877
+  name: 9733cceb1b2a5968
+  score: good
+  failures:
+  - MissedObstacle('76621f352ff15ead')
+- type: high_magnitude_speed
+  subtype: MissingObstacle/InPath
+  log: 2021.06.09.17.23.18_veh-38_00773_01140
+  name: c1bb68e3ce345848
+  score: good
+  failures:
+  - MissedObstacle('92c90bdf1c205f03')
+# - type: starting_right_turn
+#   subtype: MissingObstacle/NotInPath
+#   log: 2021.06.09.11.54.15_veh-12_04366_04810
+#   name: a58bb9b7f6f85f64
+#   score: good
+#   failures:
+#   - AtTimestep(Flickering(MissedObstacle('de4deccf2c91551e')), 1623258933650143)
+# - type: on_carpark
+#   subtype: GhostObstacle/NotInPath
+#   log: 2021.09.16.15.12.03_veh-42_01037_01434
+#   name: 1413663033195e4f
+#   score: good
+#   failures:
+#   - GhostObstacle(Offset(-pi/2, 2.7, 0))
+# - type: near_multiple_pedestrians
+#   subtype: GhostObstacle/NotInPath
+#   log: 2021.06.09.12.39.51_veh-26_05620_06003
+#   name: 6a6326f2d8b25bd3
+#   score: good
+#   failures:
+#   - GhostObstacle(Offset(0, 20, 0.01), Angle(Constant(-pi/4)))
+# - type: traversing_intersection
+#   subtype: MissingObstacle/NotInPath
+#   log: 2021.05.12.22.00.38_veh-35_01008_01518
+#   name: bb61b22a2b17570d
+#   score: good
+#   failures:
+#   - Flickering(MissedObstacle('e6fb9c3018865978'))
+# - type: on_stopline_crosswalk
+#   subtype: Misdetection/Velocity
+#   log: 2021.10.01.19.16.42_veh-28_02011_02410
+#   name: 0893618e9f545c77
+#   score: good
+#   failures:
+#   - Misdetection("972686c6c5625b0b", velocity_ratio=Uniform(0.5, 2.0))
+

@@ -1,0 +1,7 @@
+# - type: near_long_vehicle
+#   subtype: Misdetection/Velocity
+#   log: 2021.06.09.17.23.18_veh-38_02526_03027
+#   name: fe58dfb9f6645f39
+#   score: good
+#   failures:
+#   - Misdetection("429fac2479ab5c4c", velocity_ratio=Uniform(0.5, 1.5))

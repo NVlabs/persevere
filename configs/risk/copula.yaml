@@ -1,0 +1,13 @@
+copula:
+  type: copula 
+  risk_aversion: [0.9, 0.95, 0.99]
+  threshold: 
+    thresholds: [0.4, 0.8, 0.99]
+    labels: ["low", "medium", "high", "critical"]
+hj:
+  thresholds: [0 , -1.5, -3]
+cp:
+  risk_aversion: [0.9, 0.95, 0.99]
+  threshold:
+    thresholds: [0.4, 0.8, 0.99]
+    labels: ["low", "medium", "high", "critical"]

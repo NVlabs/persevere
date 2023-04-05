@@ -1,0 +1,41 @@
+# # -
+# #   type: stopping_at_traffic_light_without_lead
+# #   log: 2021.10.01.19.16.42_veh-28_02011_02410
+# #   name: 05dcc532031e5b39
+# #   failures:
+# #     - TrafficLightMisdetection('proximal', state='green')
+# -
+#   type: stopping_at_traffic_light_without_lead
+#   log: 2021.06.09.11.54.15_veh-12_04366_04810
+#   name: a5105d1e49b65cd8
+#   failures:
+#     - TrafficLightMisdetection('all', state='green')
+# -
+#   type: stopping_with_lead
+#   log: 2021.06.14.16.48.02_veh-12_04978_05337
+#   name: 02afb61e0e105d94
+#   failures:
+#     - MissedObstacle('e7827dd492e55397')
+#     # - Misdetection('e7827dd492e55397', Offset(0, 0.5, 0.1), Size(0.5, 0.2, 0.1))
+#     # - GhostObstacle(Offset(pi/3, 4, 0.01), Size(1, 2, 0.1))
+#     # - AtTimestep(GhostObstacle(Offset(pi/4, 6, 0.01), Size(1, 2, 0.1)), 1623708827149425)
+#     # - AtTimestep(MissedObstacle('e7827dd492e55397'), 1623708825000225)
+#     # - Mislocalization(Offset(pi/2, 3.2))
+#     # - Mislocalization(Offset(pi/4, 3.2))
+# -
+#   type: following_lane_with_slow_lead
+#   log: 2021.05.12.22.28.35_veh-35_00620_01164
+#   name: 41012c94ad025b63
+#   failures:
+#     - Flickering(MissedObstacle('0a2ef84f117857e8'), probability=0.25, duration=1)
+# -
+#   type: stopping_with_lead
+#   log: 2021.08.30.14.54.34_veh-40_00439_00835
+#   name: ddd10e683e105753
+#   failures:
+#     - Misdetection('f960c97c26d05f58', Offset(0, 0.5, 0.1), Size(0.5, 0.2, 0.1))
+# - type: high_lateral_acceleration
+#   log: 2021.06.23.16.54.19_veh-35_00808_01256
+#   name: 3389c65926b55790
+#   failures:
+#     - GhostObstacle(Offset(0, 10, 0.01), Size(2, 4, 0.1))

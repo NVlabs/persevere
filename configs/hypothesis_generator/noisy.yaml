@@ -1,0 +1,9 @@
+use_ground_truth: False
+velocity_noise:
+  vehicle: "VelocityGaussian(0.1, 0.1)"
+  pedestrian: "VelocityGaussian(0.1, 0.1)"
+  bicycle: "VelocityGaussian(0.1, 0.1)"
+position_noise:
+  vehicle: "PositionGaussian(0.2, 0.2, 0.1)"
+  pedestrian: "PositionGaussian(0.2, 0.2, 0.1)"
+  bicycle: "PositionGaussian(0.2, 0.2, 0.1)"

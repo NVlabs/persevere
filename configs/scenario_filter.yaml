@@ -1,0 +1,55 @@
+scenario_types:
+  - stationary
+  - traversing_intersection
+  - near_long_vehicle
+  - medium_magnitude_speed
+  - unknown
+  - stationary_in_traffic
+  - traversing_traffic_light_intersection
+  - high_magnitude_speed
+  - stationary_at_traffic_light_without_lead
+  - traversing_pickup_dropoff
+  - on_traffic_light_intersection
+  - low_magnitude_speed
+  - near_trafficcone_on_driveable
+  - near_multiple_vehicles
+  - starting_protected_cross_turn
+  - near_high_speed_vehicle
+  - near_pedestrian_on_crosswalk
+  - on_pickup_dropoff
+  - on_intersection
+  - on_stopline_stop_sign
+  - on_carpark
+  - following_lane_with_slow_lead
+  - near_construction_zone_sign
+  - stationary_at_traffic_light_with_lead
+  - waiting_for_pedestrian_to_cross
+  - traversing_crosswalk
+  - on_stopline_traffic_light
+  - following_lane_without_lead
+  - on_stopline_crosswalk
+  - high_lateral_acceleration
+  - stopping_at_traffic_light_without_lead
+  - near_barrier_on_driveable
+  - stopping_at_crosswalk
+  - starting_straight_stop_sign_intersection_traversal
+  - stopping_with_lead
+  - stopping_at_stop_sign_no_crosswalk
+  - near_multiple_pedestrians
+  - starting_unprotected_cross_turn
+  - stopping_at_stop_sign_without_lead
+  - changing_lane_to_right
+  - accelerating_at_traffic_light_with_lead
+  - starting_right_turn
+  - starting_unprotected_noncross_turn
+  - accelerating_at_crosswalk
+  - starting_protected_noncross_turn
+  - starting_straight_traffic_light_intersection_traversal
+  - stationary_at_crosswalk
+  - following_lane_with_lead
+  - changing_lane_to_left
+  - high_magnitude_jerk
+  - traversing_narrow_lan
+scenario_tokens:
+num_scenarios_per_type: 1
+limit_total_scenarios: 

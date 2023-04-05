@@ -1,0 +1,6 @@
+use_ground_truth: False
+velocity_magnitude:
+  vehicle: 9.72222 #m/s
+  pedestrian: 1.38889 #m/s
+  bicycle: 6.94444 #m/s
+  genericobject: 0

@@ -1,0 +1,4 @@
+DATA_ROOT:  ${oc.env:NUPLAN_DATA_ROOT}
+MAPS_ROOT:  ${oc.env:NUPLAN_MAPS_ROOT}
+DB_FILES:  ${oc.env:NUPLAN_DATA_ROOT}nuplan-v1.1/mini
+MAP_VERSION: nuplan-maps-v1.0

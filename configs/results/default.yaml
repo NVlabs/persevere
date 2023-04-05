@@ -1,0 +1,8 @@
+outdir: "experiments"
+sim_dir: "simulation"
+sim_logs_dir: "simulation_log"
+metrics_dir: "metrics"
+aggregator_metric_dir: "aggregator_metric"
+plots: "plots"
+result_file: "results.msgpack.xz"
+postprocessed_file: "postprocessed.pickle"
