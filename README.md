@@ -1,4 +1,4 @@
-[![NVIDIA Source Code License](https://img.shields.io/badge/license-NSCL-blue.svg)](https://github.com/NVlabs/perp-fail-severity/blob/main/LICENSE)
+[![NVIDIA Source Code License](https://img.shields.io/badge/license-NSCL-blue.svg)](https://github.com/NVlabs/perp-fail-severity/blob/main/LICENSE.md)
 ![Python 3.9](https://img.shields.io/badge/python-3.9-green.svg)
 
 # Perception Failure Severity Estimation
@@ -175,4 +175,4 @@ This will check that staged and committed files are compliant.
 
 ## Licence
 
-The source code is released under the [NSCL licence](https://github.com/NVlabs/diffstack/blob/main/LICENSE.txt). The preprocessed dataset and pretrained models are under the [CC BY-NC-SA 4.0 licence](https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
+The source code is released under the [NSCL licence](https://github.com/NVlabs/perp-fail-severity/blob/main/LICENSE.md). The preprocessed dataset and pretrained models are under the [CC BY-NC-SA 4.0 licence](https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
