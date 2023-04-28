@@ -3,7 +3,7 @@ out/
 outputs/
 experiments/
 temporary/
-**/models/
+**/models/hj
 
 .git-rewrite/
 

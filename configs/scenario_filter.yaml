@@ -52,4 +52,4 @@ scenario_types:
   - traversing_narrow_lan
 scenario_tokens:
 num_scenarios_per_type: 1
-limit_total_scenarios: 
+limit_total_scenarios:

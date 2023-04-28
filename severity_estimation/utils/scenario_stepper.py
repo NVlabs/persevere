@@ -1,9 +1,7 @@
 from typing import Optional, cast
 
 from nuplan.planning.scenario_builder.abstract_scenario import AbstractScenario
-from nuplan.planning.simulation.simulation_time_controller.simulation_iteration import (
-    SimulationIteration,
-)
+from nuplan.planning.simulation.simulation_time_controller.simulation_iteration import SimulationIteration
 from nuplan.planning.simulation.simulation_time_controller.step_simulation_time_controller import (
     StepSimulationTimeController,
 )
@@ -45,9 +43,7 @@ class ScenarioStepper(StepSimulationTimeController):
     def get_iteration(self) -> SimulationIteration:
         """Inherited, see superclass."""
         scenario_time = self.scenario.get_time_point(self.current_iteration_index)
-        return SimulationIteration(
-            time_point=scenario_time, index=self.current_iteration_index
-        )
+        return SimulationIteration(time_point=scenario_time, index=self.current_iteration_index)
 
     def next_iteration(self) -> Optional[SimulationIteration]:
         """Inherited, see superclass."""

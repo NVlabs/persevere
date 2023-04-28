@@ -7,11 +7,7 @@ import torch
 from loguru import logger
 
 from severity_estimation.planner.scene_manager import Prediction, SceneManager
-from severity_estimation.planner.utils import (
-    context,
-    convert_trajectory_to_node,
-    load_online_trajectron_model,
-)
+from severity_estimation.planner.utils import context, convert_trajectory_to_node, load_online_trajectron_model
 from severity_estimation.trajectron.visualization import vis
 
 
@@ -26,13 +22,9 @@ class TrajectronManager:
         self.ctx = context(cfg)
         eval_env, hyperparams, self._base_model = load_online_trajectron_model(self.ctx)
         self._hyperparams = hyperparams
-        self.base_scene = SceneManager(
-            self.ctx, eval_env.scenes[0], self._scene_radius, self._subsample_ratio
-        )
+        self.base_scene = SceneManager(self.ctx, eval_env.scenes[0], self._scene_radius, self._subsample_ratio)
         eval_env, _, self._hyp_model = load_online_trajectron_model(self.ctx)
-        self.hyp_scene = SceneManager(
-            self.ctx, eval_env.scenes[0], self._scene_radius, self._subsample_ratio
-        )
+        self.hyp_scene = SceneManager(self.ctx, eval_env.scenes[0], self._scene_radius, self._subsample_ratio)
         self._ego_node = None
 
         self._ph = round(self._planned_horizon / self.base_scene.scene.dt)
@@ -95,18 +87,12 @@ class TrajectronManager:
         )
         self._ego_node.width = ego_states[-1].agent._box.width
         self._ego_node.length = ego_states[-1].agent._box.length
-        self._tau = (
-            (self._sim_step - self._last_prediction_time)
-            if self._last_prediction_time > 0
-            else -1
-        )
+        self._tau = (self._sim_step - self._last_prediction_time) if self._last_prediction_time > 0 else -1
 
     def _robot_present_and_future(self, scene, timestep):
         if scene.robot is not None and self._hyperparams["incl_robot_node"]:
             robot_present_and_future = scene.robot.get(
-                np.array(
-                    [timestep, timestep + self._hyperparams["prediction_horizon"]]
-                ),
+                np.array([timestep, timestep + self._hyperparams["prediction_horizon"]]),
                 self._hyperparams["state"][scene.robot.type],
                 padding=0.0,
             )
@@ -129,9 +115,7 @@ class TrajectronManager:
             self._last_prediction_time = self._sim_step
             self._tau = 0
             # base scene
-            tpp_inputs = self.base_scene.scene.get_clipped_input_dict(
-                self._sim_step, self._hyperparams["state"]
-            )
+            tpp_inputs = self.base_scene.scene.get_clipped_input_dict(self._sim_step, self._hyperparams["state"])
             predictions = self._base_model.incremental_forward(
                 new_inputs_dict=tpp_inputs,
                 maps=None,
@@ -139,9 +123,7 @@ class TrajectronManager:
                 num_samples=self._samples,
             )
             # base scene
-            tpp_inputs = self.hyp_scene.scene.get_clipped_input_dict(
-                self._sim_step, self._hyperparams["state"]
-            )
+            tpp_inputs = self.hyp_scene.scene.get_clipped_input_dict(self._sim_step, self._hyperparams["state"])
             hyp_predictions = self._hyp_model.incremental_forward(
                 tpp_inputs,
                 maps=None,
@@ -183,9 +165,7 @@ class TrajectronManager:
                     "acceleration": ["x", "y"],
                     "heading": ["°", "d°"],
                 }
-                robot_for_plotting = self.hyp_scene.scene.robot.get(
-                    prediction_timesteps, state_dict
-                )
+                robot_for_plotting = self.hyp_scene.scene.robot.get(prediction_timesteps, state_dict)
                 # Trajectory
                 ax.plot(
                     self._ego_node.data.data[:, 0],

@@ -8,22 +8,21 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = "~3.9"
 poethepoet = "^0.14.0" # task manager
-# nuplan-devkit = { git = "https://github.com/motional/nuplan-devkit.git", branch = "nuplan-devkit-v0.3" }
-nuplan = {path = "../nuplan", develop = true}
+# nuplan = {path = "../nuplan", develop = true}
 hydra-core = "^1.2.0"
 loguru = "^0.6.0"
 copulae = "^0.7.7"
 imageio = "^2.19.5"
 hj-reachability = "^0.4.0"
+rich = "^12.6.0"
 
 # PyTorch
 torch = { url = "https://download.pytorch.org/whl/cu111/torch-1.8.1%2Bcu111-cp39-cp39-linux_x86_64.whl" }
 torchvision = { url = "https://download.pytorch.org/whl/cu111/torchvision-0.9.1%2Bcu111-cp39-cp39-linux_x86_64.whl" }
 
 # JAX
-# jaxlib = { url = "https://storage.googleapis.com/jax-releases/cuda11/jaxlib-0.3.25+cuda11.cudnn82-cp39-cp39-manylinux2014_x86_64.whl" }
-jaxlib = { extras = ["cuda"], version = "0.3.25" }
-# jax = "0.3.25"
+jax = ">= 0.4.8"
+# jaxlib = { url = "https://storage.googleapis.com/jax-releases/cuda11/jaxlib-0.4.7+cuda11.cudnn86-cp39-cp39-manylinux2014_x86_64.whl" }
 
 # Trajectron deps
 # trajectron-plus-plus  = {path = "../Trajectron-plus-plus", develop = true}
@@ -42,17 +41,19 @@ scikit-learn = "^1.1.1"
 torchmetrics = "0.6.2"
 
 # nuPlan deps
+# nuplan-devkit = { git = "https://github.com/motional/nuplan-devkit.git", branch = "nuplan-devkit-v0.3" }
+nuplan-devkit  = {path = "../nuplan-devkit", develop = true}
 Jinja2 = "^3.1.2"
 bokeh = "^2.4.3"
-Shapely = "^1.8.4"
-geopandas = "^0.11.1"
+Shapely = ">=2.0.0"
+geopandas = ">=0.12.1"
 opencv-python = "<=4.5.1.48"
 Pillow = "^9.2.0"
 pytorch-lightning = "1.3.8"
 selenium = "^4.5.0"
 psutil = "^5.9.2"
 pyinstrument = "^4.3.0"
-boto3 = "1.19.8"
+boto3 = "1.24.59"
 rasterio = "^1.3.2"
 SQLAlchemy = " >=1.4.27"
 ujson = "^5.5.0"
@@ -60,15 +61,13 @@ ray = "^2.0.0"
 pyogrio = "^0.4.2"
 pyarrow = "^9.0.0"
 timm = "^0.6.11"
-tensorboard = "2.9.1"
-rich = "^12.6.0"
+retry = "^0.9.2"
 
 [tool.poetry.dev-dependencies]
 black = "22.6.0"
 pytest = "^7.1.2"
 ptvsd = "^4.3.2"
 pre-commit = "^2.20.0"
-ipykernel = "^6.16.1"
 isort = "^5.11.4"
 
 [build-system]

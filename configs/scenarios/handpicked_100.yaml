@@ -80,7 +80,7 @@
   log: 2021.06.08.14.35.24_veh-26_02555_03004
   name: 53dc0b75db6f5a72
   score: good
-  failures: 
+  failures:
     - Misdetection("7092068c55115f56", rotation=Angle(Uniform(-pi/6, pi/6)), velocity_ratio=Uniform(0.7, 1.3))
 - type: stopping_at_crosswalk
   subtype: Misdetection/Velocity
@@ -116,14 +116,14 @@
   name: bb46c5bb47fa52bb
   score: good
   failures:
-    - Flickering(GhostObstacle(Offset(0, 12, 0.01), Angle(Constant(0)))) 
+    - Flickering(GhostObstacle(Offset(0, 12, 0.01), Angle(Constant(0))))
 - type: following_lane_without_lead
   subtype: GhostObstacle/InPath
   log: 2021.10.11.07.12.18_veh-50_00211_00304
   name: 2b0229cdac2c5ba7
   score: good
   failures:
-    - Flickering(GhostObstacle(Offset(0, 12, 0.01), Angle(Constant(0)))) 
+    - Flickering(GhostObstacle(Offset(0, 12, 0.01), Angle(Constant(0))))
 - type: near_long_vehicle
   subtype: Misdetection/Velocity
   log: 2021.07.16.18.06.21_veh-38_04471_04922
@@ -265,7 +265,7 @@
   log: 2021.10.06.17.43.07_veh-28_00508_00877
   name: 9733cceb1b2a5968
   score: good
-  failures: 
+  failures:
     - MissedObstacle('76621f352ff15ead')
 - type: on_intersection
   subtype: GhostObstacle/NotInPath
@@ -315,7 +315,7 @@
   log: 2021.06.14.18.33.41_veh-35_03901_04264
   name: 19a1b681a1745029
   score: good
-  failures: 
+  failures:
     - GhostObstacle(Offset(-pi, 8, 0), Angle(Constant(-pi)))
 - type: starting_protected_cross_turn
   subtype: GhostObstacle/NotInPath
@@ -329,7 +329,7 @@
   log: 2021.06.09.12.39.51_veh-26_05620_06003
   name: 7f48032e7aba53fb
   score: good
-  failures: 
+  failures:
     - Flickering(GhostObstacle(Offset(-pi/4, 23, 0)))
 - type: on_intersection
   subtype: Misdetection/Size
@@ -358,7 +358,7 @@
   name: 10635e86b16a54b7
   score: good
   failures:
-    - Flickering(GhostObstacle(Offset(0, 26, 0.01))) 
+    - Flickering(GhostObstacle(Offset(0, 26, 0.01)))
 - type: on_traffic_light_intersection
   subtype: GhostObstacle/NotInPath
   log: 2021.06.14.17.26.26_veh-38_04544_04920
@@ -378,7 +378,7 @@
   log: 2021.06.28.16.29.11_veh-38_01415_01821
   name: 58bf54426eb05ee1
   score: good
-  failures: 
+  failures:
     - Flickering(MissedObstacle('85c6f7756f9b5cfb'))
 - type: near_long_vehicle
   subtype: MissingObstacle/NotInPath
@@ -435,7 +435,7 @@
   log: 2021.05.12.23.36.44_veh-35_02035_02387
   name: 0124d582765e5a76
   score: good
-  failures: 
+  failures:
     - Flickering(GhostObstacle(Offset(-pi, 12, 0)))
 - type: traversing_intersection
   subtype: MissingObstacle/NotInPath
@@ -449,7 +449,7 @@
   log: 2021.05.25.14.16.10_veh-35_01690_02183
   name: 0ae43d0c2f4a5295
   score: good
-  failures: 
+  failures:
     - Misdetection('59cefd9507625b0a', rotation=Angle(Gaussian(pi/4, 0.1)), velocity_ratio=Uniform(0.5, 1.5))
 - type: near_pedestrian_on_crosswalk
   subtype: GhostObstacle/InPath
@@ -590,7 +590,7 @@
   failures:
     - Flickering(MissedObstacle('81efd27d45035418'))
     - Flickering(MissedObstacle('25c7b41243c85b39'))
-    - Flickering(MissedObstacle('88473e59831d5c9e')) 
+    - Flickering(MissedObstacle('88473e59831d5c9e'))
 #
 - type: stopping_with_lead
   subtype: Misdetection/Size
@@ -640,8 +640,8 @@
   log: 2021.06.14.19.22.11_veh-38_01480_01860
   name: 06e3ae0dd22c5eac
   score: null
-  failures: 
-    - MissedObstacle('6c55df6d6d8355d5') 
+  failures:
+    - MissedObstacle('6c55df6d6d8355d5')
 - type: starting_unprotected_noncross_turn
   subtype: GhostObstacle/InPath
   log: 2021.10.05.07.10.04_veh-52_01442_01802

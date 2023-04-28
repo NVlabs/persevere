@@ -11,41 +11,28 @@ import msgpack
 import numpy as np
 from loguru import logger
 from nuplan.common.actor_state.tracked_objects_types import TrackedObjectType
-from nuplan.planning.metrics.evaluation_metrics.common.ego_lane_change import (
-    EgoLaneChangeStatistics,
-)
+from nuplan.planning.metrics.evaluation_metrics.common.ego_lane_change import EgoLaneChangeStatistics
 from nuplan.planning.metrics.metric_engine import MetricsEngine
 from nuplan.planning.nuboard.base.data_class import NuBoardFile
 from nuplan.planning.scenario_builder.nuplan_db.nuplan_scenario import NuPlanScenario
-from nuplan.planning.scenario_builder.nuplan_db.nuplan_scenario_builder import (
-    NuPlanScenarioBuilder,
-)
+from nuplan.planning.scenario_builder.nuplan_db.nuplan_scenario_builder import NuPlanScenarioBuilder
 from nuplan.planning.scenario_builder.scenario_filter import ScenarioFilter
 from nuplan.planning.simulation.callback.metric_callback import MetricCallback
 from nuplan.planning.simulation.callback.multi_callback import MultiCallback
-from nuplan.planning.simulation.callback.serialization_callback import (
-    SerializationCallback,
-)
-from nuplan.planning.simulation.callback.simulation_log_callback import (
-    SimulationLogCallback,
-)
+from nuplan.planning.simulation.callback.serialization_callback import SerializationCallback
+from nuplan.planning.simulation.callback.simulation_log_callback import SimulationLogCallback
 from nuplan.planning.simulation.controller.log_playback import LogPlaybackController
-from nuplan.planning.simulation.controller.perfect_tracking import (
-    PerfectTrackingController,
-)
+from nuplan.planning.simulation.controller.perfect_tracking import PerfectTrackingController
 
 # from nuplan.planning.simulation.observation.idm_agents import IDMAgents
 from nuplan.planning.simulation.observation.tracks_observation import TracksObservation
-from nuplan.planning.simulation.runner.simulations_runner import SimulationsRunner
+from nuplan.planning.simulation.runner.simulations_runner import SimulationRunner
 from nuplan.planning.simulation.simulation import SimulationSetup
 from nuplan.planning.utils.multithreading.worker_sequential import Sequential
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 from postprocessor import postprocess
-from tools import validate_scenario_config
 from severity_estimation.fault_injection.common_failures import *
-from severity_estimation.fault_injection.failures import FaultInjectionManager
-from severity_estimation.fault_injection.simulator import Simulator
 from severity_estimation.fault_injection.datatypes import (  # necessary for configuration
     Angle,
     Constant,
@@ -55,19 +42,26 @@ from severity_estimation.fault_injection.datatypes import (  # necessary for con
     Size,
     Uniform,
 )
+from severity_estimation.fault_injection.failures import FaultInjectionManager
+from severity_estimation.fault_injection.simulator import Simulator
 from severity_estimation.planner.idm_agents import IDMAgents
-from severity_estimation.planner.metrics.collision_metric import (
-    FaultAwareCollisionStatistics,
-)
+from severity_estimation.planner.metrics.collision_metric import FaultAwareCollisionStatistics
 from severity_estimation.planner.prediction_risk_planner import PredictionRiskPlanner
 from severity_estimation.planner.risk_planner_results import RiskPlannerResults
 from severity_estimation.utils.scenario_stepper import ScenarioStepper
+from tools import validate_scenario_config
 
-fmt = "<green>{time:MM.DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan> | <level>{message}</level>"
+fmt = (
+    "<green>{time:MM.DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan> | <level>{message}</level>"
+)
 logger.remove()  # All configured handlers are removed
 logger.add(sys.stderr, format=fmt)
 
 pi = np.pi  # used in the scenario configuration
+
+import warnings
+
+warnings.filterwarnings("ignore")
 
 
 def simulate(
@@ -99,9 +93,7 @@ def simulate(
         observations = TracksObservation(scenario=scenario)
         ego_controller = LogPlaybackController(scenario=scenario)
     # Simulation
-    sim_manager = ScenarioStepper(
-        scenario=scenario, max_duration=cfg.simulation.max_duration
-    )
+    sim_manager = ScenarioStepper(scenario=scenario, max_duration=cfg.simulation.max_duration)
     simulation_setup = SimulationSetup(
         time_controller=sim_manager,
         observations=observations,
@@ -121,8 +113,8 @@ def simulate(
         else None
     )
     planner = PredictionRiskPlanner(cfg, plot_folder=plot_dir)
-    runner = SimulationsRunner([simulation], planner)
-    report = runner.run()[0]
+    runner = SimulationRunner(simulation, planner)
+    report = runner.run()
     return RiskPlannerResults(
         start_time=report.start_time,
         end_time=report.end_time,
@@ -161,6 +153,7 @@ def main_app(cfg: DictConfig) -> None:
         remove_invalid_goals=False,
         shuffle=False,
         timestamp_threshold_s=None,
+        ego_displacement_minimum_m=None,
     )
     scenario_builder = NuPlanScenarioBuilder(
         data_root=cfg.nuplan.DATA_ROOT,
@@ -171,12 +164,8 @@ def main_app(cfg: DictConfig) -> None:
     scenarios = scenario_builder.get_scenarios(filter, Sequential())
 
     # Callbacks
-    ego_lane_change_metric = EgoLaneChangeStatistics(
-        "ego_lane_change_statistics", "Planning", max_fail_rate=0.3
-    )
-    collision_metric = FaultAwareCollisionStatistics(
-        "collisions_statistics", "Planning", ego_lane_change_metric
-    )
+    ego_lane_change_metric = EgoLaneChangeStatistics("ego_lane_change_statistics", "Planning", max_fail_rate=0.3)
+    collision_metric = FaultAwareCollisionStatistics("collisions_statistics", "Planning", ego_lane_change_metric)
     metric_engine = MetricsEngine(
         metrics=[ego_lane_change_metric, collision_metric],
         main_save_path=output_dir / cfg.results.metrics_dir,
@@ -238,11 +227,7 @@ def main_app(cfg: DictConfig) -> None:
                 scenario_cfg = c
                 break
         # Simulate scenario (with failures)
-        failure_generators = (
-            [eval(gen) for gen in scenario_cfg.failures]
-            if scenario_cfg.failures
-            else []
-        )
+        failure_generators = [eval(gen) for gen in scenario_cfg.failures] if scenario_cfg.failures else []
         failure_injector = FaultInjectionManager(failure_generators)
         report = simulate(
             cfg,
@@ -266,9 +251,7 @@ def main_app(cfg: DictConfig) -> None:
     with open(output_dir / cfg.results.postprocessed_file, "wb") as handle:
         pickle.dump(postprocessed_results, handle)
 
-    logger.info(
-        f"Done!\nYou can visualize results with:\n > poetry run viz {output_dir} --nuboard"
-    )
+    logger.info(f"Done!\nYou can visualize results with:\n > poetry run viz {output_dir} --nuboard")
 
 
 if __name__ == "__main__":

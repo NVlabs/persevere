@@ -5,20 +5,15 @@ from random import shuffle
 from typing import Set
 
 import click
-from nuplan.planning.scenario_builder.nuplan_db.nuplan_scenario_builder import (
-    NuPlanScenarioBuilder,
-)
+from nuplan.planning.scenario_builder.nuplan_db.nuplan_scenario_builder import NuPlanScenarioBuilder
 from nuplan.planning.scenario_builder.scenario_filter import ScenarioFilter
 from nuplan.planning.utils.multithreading.worker_sequential import Sequential
 from omegaconf import DictConfig, ListConfig, OmegaConf
+from rich import print as rprint
 from rich.console import Console
 from rich.table import Table
-from rich import print as rprint
 
-from severity_estimation.fault_injection.common_failures import (
-    COMMON_FAILURES,
-    TEMPORAL_FAILURES,
-)
+from severity_estimation.fault_injection.common_failures import COMMON_FAILURES, TEMPORAL_FAILURES
 
 BASE_FAILURES = sorted(list({c.__name__ for c in COMMON_FAILURES}))
 TEMPORAL_TYPES = sorted(list({c.__name__ for c in TEMPORAL_FAILURES}))
@@ -43,6 +38,7 @@ def _get_scenarios(nuplan_cfg, filter_cfg=None):
         remove_invalid_goals=False,
         shuffle=False,
         timestamp_threshold_s=None,
+        ego_displacement_minimum_m=None,
     )
     # fmt: on
     scenario_builder = NuPlanScenarioBuilder(
@@ -62,22 +58,16 @@ def validate_scenario_config(cfg, check_unique=True):
         assert "type" in scenario, "scenario must have a type"
         assert "log" in scenario, "scenario must have a log name"
         assert "name" in scenario, "scenario must have a name"
-        assert SCENARIO_NAME_FORMAT.fullmatch(
-            scenario.name
-        ), f"invalid scenario name `{scenario.name}`"
+        assert SCENARIO_NAME_FORMAT.fullmatch(scenario.name), f"invalid scenario name `{scenario.name}`"
         assert "failures" in scenario, "scenario must have failures"
         if check_unique:
-            assert (
-                scenario.name not in unique_names
-            ), f"duplicate scenario name {scenario.name}"
+            assert scenario.name not in unique_names, f"duplicate scenario name {scenario.name}"
             unique_names.add(scenario.name)
         if scenario.failures is not None:
             assert isinstance(scenario.failures, ListConfig), "failures must be a list"
             for failure in scenario.failures:
                 assert isinstance(failure, str), "failure must be a string"
-                assert any(
-                    f in failure for f in BASE_FAILURES
-                ), f"unknown failure {failure}"
+                assert any(f in failure for f in BASE_FAILURES), f"unknown failure {failure}"
 
 
 def _load_and_validate_config(config, check_unique=True):
@@ -104,12 +94,6 @@ def info(config):
     """
 
     FailureActivation = lambda: {k: 0 for k in TEMPORAL_TYPES} | {"Static": 0}
-
-    def find_element(s, string):
-        for element in s:
-            if element in string:
-                return element
-        return None
 
     cfg = _load_and_validate_config(config)
     # Failures Summary
@@ -141,8 +125,7 @@ def info(config):
         tot = sum(v.values())
         tot_str = f"{tot/num_failures*100:.2f}% ({tot})" if tot > 0 else None
         z = [f, tot_str] + [
-            f"{v[t]/num_failures*100:.2f}% ({v[t]})" if v[t] > 0 else None
-            for t in ["Static"] + TEMPORAL_TYPES
+            f"{v[t]/num_failures*100:.2f}% ({v[t]})" if v[t] > 0 else None for t in ["Static"] + TEMPORAL_TYPES
         ]
         table.add_row(*z)
     console.print(table)
@@ -225,7 +208,7 @@ def validate(config):
             print(f" ↳ {x}")
 
 
-@cli.command(short_help="validate a scenario configuration")
+@cli.command(short_help="select N random scenarios from a scenario configuration")
 @click.argument("config", type=click.Path(exists=True))
 @click.argument("n", type=int)
 def random(config, n):
@@ -237,9 +220,7 @@ def random(config, n):
     """
     cfg = _load_and_validate_config(config)
     if n > len(cfg):
-        print(
-            f"ERROR: Cannot get {n} random scenarios from a configuration with {len(cfg)} scenarios"
-        )
+        print(f"ERROR: Cannot get {n} random scenarios from a configuration with {len(cfg)} scenarios")
         exit(1)
     shuffle(cfg)
     print(OmegaConf.to_yaml(cfg[:n]))
@@ -433,9 +414,7 @@ def compare_confusion_matrices(matrix1, matrix2):
     # Flip dictionaries i.e. {scenario: class}
     scenarios_1 = dict(ChainMap(*[{x: k for x in v} for k, v in matrix1.items()]))
     scenarios_2 = dict(ChainMap(*[{x: k for x in v} for k, v in matrix2.items()]))
-    assert (
-        scenarios_1.keys() == scenarios_2.keys()
-    ), "The two matrices have different scenarios"
+    assert scenarios_1.keys() == scenarios_2.keys(), "The two matrices have different scenarios"
 
     diff = 0
     for scenario in scenarios_1.keys():

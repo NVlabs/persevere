@@ -8,9 +8,7 @@ from severity_estimation.planner.query_utils import query_node, query_prediction
 class CostManager:
 
     # momentum shaped distance
-    def compute_noplan_distance_to_agent_cost(
-        self, ego_node, timesteps, predictions=None, split_agents=False
-    ):
+    def compute_noplan_distance_to_agent_cost(self, ego_node, timesteps, predictions=None, split_agents=False):
         queries = [
             Query.position,
             Query.velocity,
@@ -39,6 +37,4 @@ class CostManager:
             vi_epsilon, vo_epsilon = 1, 1
         queries = [Query.rotated_relative_position, Query.rotated_relative_velocity]
 
-        returns = _distance_to_agent_cost(
-            rotated_relative_position, rotated_relative_velocity, vi_epsilon, vo_epsilon
-        )
+        returns = _distance_to_agent_cost(rotated_relative_position, rotated_relative_velocity, vi_epsilon, vo_epsilon)

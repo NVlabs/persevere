@@ -1,7 +1,7 @@
 """Utilities to convert python data to latex tables."""
 
 import functools
-from typing import Sequence, Any, Callable, Optional
+from typing import Any, Callable, Optional, Sequence
 
 RowT = Sequence[Any]
 DataT = Sequence[RowT]
@@ -112,9 +112,7 @@ def _get_num_columns(data: DataT) -> int:
     n_columns = sorted({len(row) for row in data})
     if len(n_columns) != 1:
         found = ", ".join(str(num) for num in n_columns)
-        raise ValueError(
-            f"All rows must have the same number of columns. Found: {found}."
-        )
+        raise ValueError(f"All rows must have the same number of columns. Found: {found}.")
     return n_columns[0]
 
 
@@ -137,14 +135,13 @@ def _create_table_rows(
         midrule_condition: Callback to check for additional inserted midrules.
     """
     row_end = r" \\"
+
     def _fmt(val, fmt):
         return val if isinstance(val, str) else f"{val:{fmt}}"
 
     def create_row(row: RowT, fmt: str = fmt, bold_values=[]) -> str:
         text = [
-            f"\\textbf{{{_fmt(x, fmt)}}}"
-            if bold_values and x == bold_values[i]
-            else f"{_fmt(x, fmt)}"
+            f"\\textbf{{{_fmt(x, fmt)}}}" if bold_values and x == bold_values[i] else f"{_fmt(x, fmt)}"
             for i, x in enumerate(row)
         ]
         return " & ".join(text) + row_end
@@ -202,9 +199,7 @@ def _wrap_tex_environment(
     cmd = f"{{{cmd}}}" if cmd else ""
     begin = rf"\begin{{{environment}}}{cmd}{options}"
 
-    inner_lines = [
-        " " * indentation + line for line in text.split("\n") if line.strip()
-    ]
+    inner_lines = [" " * indentation + line for line in text.split("\n") if line.strip()]
     content = "\n".join(inner_lines)
 
     end = rf"\end{{{environment}}}"
@@ -226,9 +221,7 @@ def _table_alignment(alignment: str, n_columns: int) -> str:
 
     align_chars = "lcr|"
     if set(alignment) - set(align_chars):
-        raise ValueError(
-            f"Invalid alignment '{alignment}'. Must only contain: {align_chars}."
-        )
+        raise ValueError(f"Invalid alignment '{alignment}'. Must only contain: {align_chars}.")
     alignment_chars = alignment.replace("|", "")
     n_alignment_chars = len(alignment_chars)
 
@@ -242,12 +235,8 @@ def _table_alignment(alignment: str, n_columns: int) -> str:
             return "|".join(raw_alignment)
         if len(alignment) == 3:
             return "|" + "|".join(raw_alignment) + "|"
-        raise ValueError(
-            f"Too many | separators passed to alignment '{alignment}'. "
-            "Must pass exactly 1 or 2."
-        )
+        raise ValueError(f"Too many | separators passed to alignment '{alignment}'. " "Must pass exactly 1 or 2.")
 
     raise ValueError(
-        f"Number of alignment characters ({n_alignment_chars}) "
-        "must match number of columns {n_columns}."
+        f"Number of alignment characters ({n_alignment_chars}) " "must match number of columns {n_columns}."
     )

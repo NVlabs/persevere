@@ -7,20 +7,13 @@ from nuplan.common.actor_state.oriented_box import in_collision
 from nuplan.common.actor_state.tracked_objects import TrackedObject
 from nuplan.common.actor_state.tracked_objects_types import TrackedObjectType
 from nuplan.planning.metrics.evaluation_metrics.base.metric_base import MetricBase
-from nuplan.planning.metrics.evaluation_metrics.common.ego_lane_change import (
-    EgoLaneChangeStatistics,
-)
+from nuplan.planning.metrics.evaluation_metrics.common.ego_lane_change import EgoLaneChangeStatistics
 from nuplan.planning.metrics.evaluation_metrics.common.no_ego_at_fault_collisions import (
     Collisions,
     _classify_at_fault_collisions,
     _get_collision_type,
 )
-from nuplan.planning.metrics.metric_result import (
-    MetricStatistics,
-    MetricStatisticsType,
-    Statistic,
-    TimeSeries,
-)
+from nuplan.planning.metrics.metric_result import MetricStatistics, MetricStatisticsType, Statistic, TimeSeries
 from nuplan.planning.metrics.utils.collision_utils import (
     CollisionType,
     ego_delta_v_collision,
@@ -28,10 +21,7 @@ from nuplan.planning.metrics.utils.collision_utils import (
 )
 from nuplan.planning.scenario_builder.abstract_scenario import AbstractScenario
 from nuplan.planning.simulation.history.simulation_history import SimulationHistory
-from nuplan.planning.simulation.observation.idm.utils import (
-    is_agent_behind,
-    is_track_stopped,
-)
+from nuplan.planning.simulation.observation.idm.utils import is_agent_behind, is_track_stopped
 from nuplan.planning.simulation.observation.observation_type import DetectionsTracks
 from shapely.geometry import LineString
 
@@ -114,9 +104,7 @@ class FaultAwareCollisionStatistics(MetricBase):
         :param max_violation_threshold_object: Maximum threshold for the collision with objects.
         :param metric_score_unit: Metric final score unit.
         """
-        super().__init__(
-            name=name, category=category, metric_score_unit=metric_score_unit
-        )
+        super().__init__(name=name, category=category, metric_score_unit=metric_score_unit)
         self._max_violation_threshold_vru = max_violation_threshold_vru
         self._max_violation_threshold_vehicle = max_violation_threshold_vehicle
         self._max_violation_threshold_object = max_violation_threshold_object
@@ -124,17 +112,13 @@ class FaultAwareCollisionStatistics(MetricBase):
         # Store results and all_collisions to re-use in high level metrics
         self.results: List[MetricStatistics] = []
         self.all_collisions: List[Collisions] = []
-        self.all_at_fault_collisions: Dict[
-            TrackedObjectType, List[float]
-        ] = defaultdict(list)
+        self.all_at_fault_collisions: Dict[TrackedObjectType, List[float]] = defaultdict(list)
         self.timestamps_at_fault_collisions: List[int] = []
 
         # Initialize ego_lane_change_metric
         self._ego_lane_change_metric = ego_lane_change_metric
 
-    def _compute_collision_score(
-        self, number_of_collisions: int, max_violation_threshold: int
-    ) -> float:
+    def _compute_collision_score(self, number_of_collisions: int, max_violation_threshold: int) -> float:
         """
         Compute a score based on a maximum violation threshold. The score is max( 0, 1 - (x / (max_violation_threshold + 1)))
         The score will be 0 if the number of collisions exceeds this value.
@@ -166,9 +150,7 @@ class FaultAwareCollisionStatistics(MetricBase):
             )  # Collision score based on the number of at fault collisions with objects
         )
 
-    def compute(
-        self, history: SimulationHistory, scenario: AbstractScenario
-    ) -> List[MetricStatistics]:
+    def compute(self, history: SimulationHistory, scenario: AbstractScenario) -> List[MetricStatistics]:
         """
         Returns the collision metric.
         :param history: History from a simulation engine
@@ -176,9 +158,9 @@ class FaultAwareCollisionStatistics(MetricBase):
         :return: the estimated collision energy and counts.
         """
         # Load pre-calculated results from ego_lane_change metric
-        assert (
-            self._ego_lane_change_metric.results
-        ), "ego_lane_change_metric must be run prior to calling {}".format(self.name)
+        assert self._ego_lane_change_metric.results, "ego_lane_change_metric must be run prior to calling {}".format(
+            self.name
+        )
         timestamps_in_common_or_connected_route_objs: List[
             int
         ] = self._ego_lane_change_metric.timestamps_in_common_or_connected_route_objs
@@ -191,9 +173,7 @@ class FaultAwareCollisionStatistics(MetricBase):
             observation = sample.observation
             timestamp = ego_state.time_point.time_us
 
-            collided_track_ids, collisions_id_data = _find_new_collisions(
-                ego_state, observation, collided_track_ids
-            )
+            collided_track_ids, collisions_id_data = _find_new_collisions(ego_state, observation, collided_track_ids)
 
             # Update list of collisions
             if len(collisions_id_data):
@@ -203,26 +183,19 @@ class FaultAwareCollisionStatistics(MetricBase):
         (
             self.timestamps_at_fault_collisions,
             self.all_at_fault_collisions,
-        ) = _classify_at_fault_collisions(
-            all_collisions, timestamps_in_common_or_connected_route_objs
-        )
+        ) = _classify_at_fault_collisions(all_collisions, timestamps_in_common_or_connected_route_objs)
 
         number_of_at_fault_collisions = sum(
-            len(track_collisions)
-            for track_collisions in self.all_at_fault_collisions.values()
+            len(track_collisions) for track_collisions in self.all_at_fault_collisions.values()
         )
         num_collision_due_to_failures = sum(
-            [
-                v.has_failure
-                for c in all_collisions
-                for _, v in c.collisions_id_data.items()
-            ]
+            v.has_failure for c in all_collisions for _, v in c.collisions_id_data.items()
         )
-        earliest_collision_timestamp = min([
-                v.time_us
-                for c in all_collisions
-                for _, v in c.collisions_id_data.items()
-            ]) if all_collisions else float('inf')
+        earliest_collision_timestamp = (
+            min(v.time_us for c in all_collisions for _, v in c.collisions_id_data.items())
+            if all_collisions
+            else float("inf")
+        )
 
         statistics = [
             Statistic(

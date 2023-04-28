@@ -4,16 +4,12 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torch.multiprocessing as mp
 from loguru import logger
 
 from severity_estimation.planner.scene_manager import Prediction, SceneManager
-from severity_estimation.planner.utils import (
-    context,
-    convert_trajectory_to_node,
-    load_trajectron_model,
-)
+from severity_estimation.planner.utils import context, convert_trajectory_to_node, load_trajectron_model
 from severity_estimation.trajectron.visualization import vis
-import torch.multiprocessing as mp
 
 
 class TrajectronManager:
@@ -26,9 +22,7 @@ class TrajectronManager:
 
         self.ctx = context(cfg)
         eval_env, self.model = load_trajectron_model(self.ctx)
-        self.base_scene = SceneManager(
-            self.ctx, eval_env.scenes[0], self._scene_radius, self._subsample_ratio
-        )
+        self.base_scene = SceneManager(self.ctx, eval_env.scenes[0], self._scene_radius, self._subsample_ratio)
         self.hyp_scene = SceneManager(
             self.ctx,
             deepcopy(self.base_scene.scene),
@@ -99,11 +93,7 @@ class TrajectronManager:
         )
         self._ego_node.width = ego_states[-1].agent._box.width
         self._ego_node.length = ego_states[-1].agent._box.length
-        self._tau = (
-            (self._sim_step - self._last_prediction_time)
-            if self._last_prediction_time > 0
-            else -1
-        )
+        self._tau = (self._sim_step - self._last_prediction_time) if self._last_prediction_time > 0 else -1
 
     def predict(self):
         out_predictions = None
@@ -129,9 +119,7 @@ class TrajectronManager:
                     full_dist=False,
                 )
             self._prediction_runtimes[self._sim_step] = time.perf_counter() - start_t
-            logger.trace(
-                f"Prediction runtime: {self._prediction_runtimes[self._sim_step]}"
-            )
+            logger.trace(f"Prediction runtime: {self._prediction_runtimes[self._sim_step]}")
             out_predictions = Prediction(
                 step=self._sim_step,
                 perceived_predictions=predictions,
@@ -165,9 +153,7 @@ class TrajectronManager:
                     "acceleration": ["x", "y"],
                     "heading": ["°", "d°"],
                 }
-                robot_for_plotting = self.hyp_scene.scene.robot.get(
-                    prediction_timesteps, state_dict
-                )
+                robot_for_plotting = self.hyp_scene.scene.robot.get(prediction_timesteps, state_dict)
                 # Trajectory
                 ax.plot(
                     self._ego_node.data.data[:, 0],

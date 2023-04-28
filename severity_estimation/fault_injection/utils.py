@@ -15,18 +15,14 @@ def random_token():
     return "".join(choices(charset, k=16))
 
 
-def find_agent_index(
-    tracked_objects: TrackedObjects, track_token: str
-) -> Optional[int]:
+def find_agent_index(tracked_objects: TrackedObjects, track_token: str) -> Optional[int]:
     for idx, obj in enumerate(tracked_objects):
         if obj.track_token == track_token:
             return idx
     return None
 
 
-def find_agent(
-    tracked_objects: TrackedObjects, track_token: str
-) -> Optional[TrackedObject]:
+def find_agent(tracked_objects: TrackedObjects, track_token: str) -> Optional[TrackedObject]:
     idx = find_agent_index(tracked_objects, track_token)
     if idx is not None:
         return tracked_objects[idx]
@@ -44,25 +40,15 @@ def remove_agent_from(
     return False
 
 
-def mutate_agent(
-    agent: TrackedObjects, offset, shape_ratio, rotation, velocity_magnitude, category
-):
+def mutate_agent(agent: TrackedObjects, offset, shape_ratio, rotation, velocity_magnitude, category):
     cos_rot, sin_rot = np.cos(rotation), np.sin(rotation)
-    agent._box._center.x += (
-        np.cos(agent._box.center.heading + offset.angle) * offset.distance
-    )
-    agent._box._center.y += (
-        np.sin(agent._box.center.heading + offset.angle) * offset.distance
-    )
+    agent._box._center.x += np.cos(agent._box.center.heading + offset.angle) * offset.distance
+    agent._box._center.y += np.sin(agent._box.center.heading + offset.angle) * offset.distance
     agent._box._length *= shape_ratio.length
     agent._box._width *= shape_ratio.width
     agent._box._center.heading = wrap_pi(agent._box._center.heading + rotation)
-    agent._velocity.x = velocity_magnitude * (
-        agent._velocity.x * cos_rot - agent._velocity.y * sin_rot
-    )
-    agent._velocity.y = velocity_magnitude * (
-        agent._velocity.x * sin_rot + agent._velocity.y * cos_rot
-    )
+    agent._velocity.x = velocity_magnitude * (agent._velocity.x * cos_rot - agent._velocity.y * sin_rot)
+    agent._velocity.y = velocity_magnitude * (agent._velocity.x * sin_rot + agent._velocity.y * cos_rot)
     metadata = SceneObjectMetadata(
         timestamp_us=agent.metadata.timestamp_us,
         token=agent.token,

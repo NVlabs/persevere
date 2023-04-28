@@ -2,7 +2,7 @@ copula:
   type: bound
   risk_aversion: [0.9, 0.95, 0.99]
   confidence: 0.9
-  threshold: 
+  threshold:
     thresholds: [0.4, 0.8, 0.99]
     labels: ["low", "medium", "high", "critical"]
 hj:

@@ -41,19 +41,14 @@ class Rectangle(NamedTuple):
     def distance_to_point(self, point):
         point_in_body_frame = rotate_points(point - self.center, -self.orientation)
         return jnp.linalg.norm(
-            point_in_body_frame
-            - jnp.clip(point_in_body_frame, -self.half_dimensions, self.half_dimensions)
+            point_in_body_frame - jnp.clip(point_in_body_frame, -self.half_dimensions, self.half_dimensions)
         )
 
 
 @jax.jit
-def rectangle_rectangle_separation_distance(
-    rectangle_0: Rectangle, rectangle_1: Rectangle
-):
+def rectangle_rectangle_separation_distance(rectangle_0: Rectangle, rectangle_1: Rectangle):
     def _separation_distance(rectangle_0, rectangle_1):
-        points_1 = rotate_points(
-            rectangle_1.corners - rectangle_0.center, -rectangle_0.orientation
-        )
+        points_1 = rotate_points(rectangle_1.corners - rectangle_0.center, -rectangle_0.orientation)
         return jnp.max(
             jax.vmap(interval_interval_separation_distance, 1)(
                 jnp.array([-rectangle_0.half_dimensions, rectangle_0.half_dimensions]),
@@ -69,9 +64,7 @@ def rectangle_rectangle_separation_distance(
 
 @jax.jit
 def rectangle_rectangle_signed_distance(rectangle_0: Rectangle, rectangle_1: Rectangle):
-    separation_distance = rectangle_rectangle_separation_distance(
-        rectangle_0, rectangle_1
-    )
+    separation_distance = rectangle_rectangle_separation_distance(rectangle_0, rectangle_1)
     return jnp.where(
         separation_distance < 0,
         separation_distance,
@@ -87,14 +80,9 @@ def plot_rectangle(r0):
     plt.plot(*np.concatenate([r0.corners, r0.corners[:1, :]], 0).T)
 
 
-def convert_relative_state_to_signed_distance(
-    relative_state, width=0.5, length=1.1, L=1.0, plot=False
-):
+def convert_relative_state_to_signed_distance(relative_state, width=0.5, length=1.1, L=1.0, plot=False):
     r0 = Rectangle(jnp.array([L / 2, 0.0]), 0.0, jnp.array([length / 2, width / 2]))
-    center = (
-        relative_state[:2]
-        + jnp.array([jnp.cos(relative_state[2]), jnp.sin(relative_state[2])]) * L / 2
-    )
+    center = relative_state[:2] + jnp.array([jnp.cos(relative_state[2]), jnp.sin(relative_state[2])]) * L / 2
     r1 = Rectangle(center, relative_state[2], jnp.array([length / 2, width / 2]))
 
     if plot:

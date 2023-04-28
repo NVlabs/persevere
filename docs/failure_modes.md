@@ -1,45 +1,66 @@
 # Failure Modes
 
-## Placeholders
+## Datatypes
 
-- `token` the track token of the vehicle that has the associated failure
-- `offset` a named tuple `Offset(angle, distance)`
-- `size` a named tuple `Size(width, length)`
-- `noise` a named tuple `Noise(mean, std)`
-- `object_type` the type of the object that is detected, i.e., one of the following:
-  - `vehicle`
-  - `pedestrian`
-  - `bicycle`
-  - `genericobject`
-  - `traffic_cone`
-  - `barrier`
-- `failure` any failure mode generator (i.e., one supported failure)
+**Offset**: Relative offset in polar coordinates
+- `angle` in radians
+- `distance` in meters
+- `noise_std` 
 
-## Supported Failures
+**Position**: Absolute position in the map
+- `x` in meters
+- `y` in meters
+- `heading` in radians
+- `noise_std`
 
-> ### Misdetection
->
-> **Signatures:** `Misdetection(token, offset:Offset, shape_ratio:Size, rotation:Angle, object_type)`
->
-> **Effect**: Shrink the bounding box of the agent `token` by `shape_ratio`, shifts it by `offset` and rotate it by `rotation` radiants. It also changes the class to `object_type`.
+**Size**: Size of the object
+- `width` in meters
+- `length` in meters
+- `noise_std`
+
+**Number**: Scalar number, it can be
+- `Gaussian`: Gaussian distribution with mean `mean` and standard deviation `std`
+- `Uniform`: Uniform distribution between `min` and `max`
+- `Constant`: Constant value `value`
+
+**Angle**: Angle in radians
+- `angle` in radians (of type number)
+
+**ObjectType**: A string representing an object class:
+- `vehicle`
+- `pedestrian`
+- `bicycle`
+- `genericobject`
+- `traffic_cone`
+- `barrier`
+
+**Token**: A string representing the unique track token of an object
+
+## Supported Failure Modes
 
 > ### Missed Obstacle
 > 
-> **Signatures:** `MissedObstacle(token)`
+> **Signatures:** `MissedObstacle(token:Token)`
 > 
 > **Effect**: The vehicle `token` is removed from detections.
 
 > ### GhostObstacle
 >
-> **Signatures:** `GhostObstacle(offset:Offset, size:Size, object_type)`
+> **Signatures:** `GhostObstacle(offset:Offset|Position, rotation:Angle, size:Size, velocity_ratio: Number, object_type:ObjectType)`
 >
-> **Effect**: Create a ghost obstacle of class `object_type` that behaves as the ego-vehicle and offeset of `offset` wrt the ego-vehicle.
+> **Effect**: Injects a ghost obstacle of class `object_type`. The offset is w.r.t the ego-vehicle. Rotation introduces an additive noise to the ego-vehicle heading. Size replaces the object size. Velocity ratio scales the object velocity.
+
+> ### Misdetection
+>
+> **Signatures:** `Misdetection(token:Token, offset:Offset, shape_ratio:Size, rotation:Angle, velocity_ratio: Number, object_type:ObjectType)`
+>
+> **Effect**: A generic failure for misdetections (i.e., misposition, wrong velocity/orientation/size etc.) The failure only affects the object with token `token`. Offset moves the object relative to its grount truth location. `shape_ratio` scales the object size. Rotation introduces an additive noise to the object heading. Velocity ratio scales the object velocity. `object_type` replaces the object class (i.e., misclassification).
 
 > ### TrafficLightMisdetection
 >
-> **Signatures:** `TrafficLightMisdetection(lane_id, traffic_light_state)`
+> **Signatures:** `TrafficLightMisdetection(selector:str, traffic_light_state)`
 >
-> **Effect**: Switch the state of traffic light `lane_id` to `traffic_light_state`.
+> **Effect**: Impose the traffic light state `traffic_light_state` to the traffic light with selector `selector`. The selector can be `all` if all traffic lights should be affected, `proximal` if only the closes to the ego-vehicle should be affected.
 
 > ### Mislocalization
 >
@@ -49,12 +70,14 @@
 
 > ### Flickering
 >
-> **Signatures:** `Flickering(failure, probability, duration)`
+> **Signatures:** `Flickering(failure:FailureGenerator, probability:float, duration:float)`
 > 
-> **Effect**: The failure `failure` (any other failure than Flickering) is applied with probability `probability`, and duration `duration`.
+> **Effect**: The failure `failure` (any other failure than `Flickering` or `AtTimestep`) is applied with probability `probability`, and duration `duration`.
 
 > ### AtTimestep
 >
-> **Signatures:** `AtTimestep(failure, time_us)`
+> **Signatures:** `AtTimestep(failure:FailureGenerator, time_us:int, stop_at:int=Infinity)`
 >
-> **Effect**: The failure `failure` (any other failure than AtTimestep) is applied from timestep `time_us` onward.
+> **Effect**: The failure `failure` (any other failure than `AtTimestep`) is applied from timestep `time_us` until `stop_at` (if finite).
+
+For examples of how to use these failures, see the [scenario configuration](/configs/scenarios/handpicked_100.yaml).

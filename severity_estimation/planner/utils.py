@@ -24,8 +24,8 @@ from severity_estimation.trajectron.datatypes import (
     Scene,
     Trajectron,
 )
-from severity_estimation.utils.containers import DotDict
 from severity_estimation.trajectron.online import OnlineTrajectron
+from severity_estimation.utils.containers import DotDict
 
 
 def _x_radius(scene: Scene):
@@ -41,9 +41,7 @@ def position_shift(scene: Scene):
 
 
 def generate_token(n=32):
-    return "".join(
-        random.choice(string.ascii_lowercase + string.digits) for _ in range(n)
-    )
+    return "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(n))
 
 
 def context(cfg):
@@ -158,13 +156,9 @@ def load_trajectron_model(ctx, ts=12, device="cuda"):
 def create_online_env(env, hyperparams, scene_idx, init_timestep):
     test_scene = env.scenes[scene_idx]
 
-    online_scene = Scene(
-        timesteps=init_timestep + 1, map=test_scene.map, dt=test_scene.dt
-    )
+    online_scene = Scene(timesteps=init_timestep + 1, map=test_scene.map, dt=test_scene.dt)
     online_scene.nodes = test_scene.get_nodes_clipped_at_time(
-        timesteps=np.arange(
-            init_timestep - hyperparams["maximum_history_length"], init_timestep + 1
-        ),
+        timesteps=np.arange(init_timestep - hyperparams["maximum_history_length"], init_timestep + 1),
         state=hyperparams["state"],
     )
     online_scene.robot = test_scene.robot
@@ -192,17 +186,13 @@ def load_online_trajectron_model(ctx, ts=12, device="cuda"):
     hyperparams["map_enc_dropout"] = 0.0
     if "incl_robot_node" not in hyperparams:
         hyperparams["incl_robot_node"] = False
-    online_env: Environment = create_online_env(
-        eval_env, hyperparams, scene_idx, init_timestep
-    )
+    online_env: Environment = create_online_env(eval_env, hyperparams, scene_idx, init_timestep)
     stg = OnlineTrajectron(model_registrar, hyperparams, device)
     stg.set_environment(online_env, init_timestep)
     return eval_env, hyperparams, stg
 
 
-def add_observations_to_scene(
-    ctx: DotDict, scene: Scene, ego_state: EgoState, tracked_objects
-):
+def add_observations_to_scene(ctx: DotDict, scene: Scene, ego_state: EgoState, tracked_objects):
     # scene_radius = (scene.y_max - scene.y_min)/2
     add_agent_to_scene(ctx, scene, ego_state, is_ego=True)
     for obj in tracked_objects:
@@ -214,7 +204,7 @@ def add_observations_to_scene(
             # if d < scene_radius:
             add_agent_to_scene(ctx, scene, obj, is_ego=False)
             # else:
-                # remove_object_from_scene(scene, obj)
+            # remove_object_from_scene(scene, obj)
     scene.timesteps += 1
 
 
@@ -234,9 +224,7 @@ def add_agent_to_scene(ctx: DotDict, scene: Scene, agent_data: Box3D, is_ego=Fal
         else:
             token = "ego" if is_ego else agent_data.track_token
         data = DoubleHeaderNumpyArray(np.array([]), ctx.Header)
-        node_type = (
-            ctx.Vehicle if is_ego else ctx.Labelmap[agent_data.metadata.category_name]
-        )
+        node_type = ctx.Vehicle if is_ego else ctx.Labelmap[agent_data.metadata.category_name]
         node = Node(
             node_type=node_type,
             node_id=token,
@@ -246,9 +234,7 @@ def add_agent_to_scene(ctx: DotDict, scene: Scene, agent_data: Box3D, is_ego=Fal
         )
         scene.nodes.append(node)
     data = (
-        convert_ego_state_to_node(scene, agent_data, node)
-        if is_ego
-        else convert_box_to_node(scene, agent_data, node)
+        convert_ego_state_to_node(scene, agent_data, node) if is_ego else convert_box_to_node(scene, agent_data, node)
     )
     # TODO[antonap]: at the moment if a detection is intermittent, the old history is disregarded
     # lag = scene.timesteps - (node.first_timestep + len(node.data.data))
@@ -274,20 +260,13 @@ def add_agent_to_scene(ctx: DotDict, scene: Scene, agent_data: Box3D, is_ego=Fal
 def find_node(scene: Scene, token: str, agent_data=None):
     nodes = scene.nodes
     if token is None and agent_data is not None:  # simple tracking for reactive agents
-        assert (
-            token is not None
-        ), "I added tokens to reactive agents, this should not be accessed."
+        assert token is not None, "I added tokens to reactive agents, this should not be accessed."
         closest_feasible_node = -1
         min_track_metric = np.inf
         for node in nodes:
             lag = scene.timesteps - (node.first_timestep + len(node.data.data))
-            dist = np.linalg.norm(
-                agent_data.center[:-1]
-                - (node.data.data[-1, :2] + position_shift(scene))
-            )
-            orientation_diff = abs(
-                agent_data.orientation.yaw_pitch_roll[0] - node.data.data[-1, 8]
-            )
+            dist = np.linalg.norm(agent_data.center[:-1] - (node.data.data[-1, :2] + position_shift(scene)))
+            orientation_diff = abs(agent_data.orientation.yaw_pitch_roll[0] - node.data.data[-1, 8])
             if lag == 0 and dist < 10 and orientation_diff < np.pi / 6:
                 track_metric = dist / 5 + orientation_diff
                 if track_metric < min_track_metric:
@@ -353,9 +332,7 @@ def convert_box_to_node(scene: Scene, box: Box3D, node: Node):
     )
 
 
-def convert_ego_state_to_node(
-    scene: Scene, ego_state: EgoState, ego_node: Optional[Node] = None
-):
+def convert_ego_state_to_node(scene: Scene, ego_state: EgoState, ego_node: Optional[Node] = None):
     x_position = ego_state.center.x - scene.x_min - _x_radius(scene)
     y_position = ego_state.center.y - scene.y_min - _y_radius(scene)
     heading = ego_state.center.heading
@@ -420,9 +397,7 @@ def convert_trajectory_to_node(
             int(scene.dt * 1e6),
         )
     ]
-    node_data = [
-        convert_ego_state_to_node(scene, trajectory.get_state_at_time(t)) for t in ts
-    ]
+    node_data = [convert_ego_state_to_node(scene, trajectory.get_state_at_time(t)) for t in ts]
     node = Node(
         node_type=ctx.Vehicle,
         node_id="ego",

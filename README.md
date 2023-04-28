@@ -3,16 +3,14 @@
 
 # Perception Failure Severity Estimation
 
-![Header](/images/header.png)
+![Header](/docs/images/header.png)
+
+This repository contains the code for [*"Task-Aware Risk Estimation of Perception Failures for Autonomous Vehicles"*](#), Proceedings of Robotics: Science and Systems (RSS), 2023.
 
 ## Requirements
 
 - Python 3.9
 - [Poetry >1.2](https://python-poetry.org/) (you can install it following [this guide](https://python-poetry.org/docs/#osx--linux--bashonwindows-install-instructions))
-
-| :warning: WARNING          |
-|:---------------------------|
-| The repository is under heavy development, be patient...      |
 
 ## Setup
 
@@ -26,12 +24,13 @@ This project relies on the environment variables to find the dataset.
 In your `~/.bashrc` (or equivalent), add
 
 ```sh
-export NUPLAN_DATA_ROOT="$HOME/datasets/nuplan/dataset"
-export NUPLAN_MAPS_ROOT="$HOME/datasets/nuplan/dataset/maps"
+export NUPLAN_DATA_ROOT="$HOME/datasets/nuplan/"
+export NUPLAN_MAPS_ROOT="$HOME/datasets/nuplan/maps"
 export NUPLAN_EXP_ROOT="$HOME/datasets/nuplan/exp"
 ```
 
 replacing the path with the one you used.
+the code expects `$NUPLAN_DATA_ROOT` to contain the `nuplan-v1.1` folder.
 
 ### Setting up the codebase
 
@@ -43,99 +42,80 @@ In a folder of your choice, run the following commands:
 git clone https://github.com/NVlabs/perp-fail-severity.git
 ```
 
-- Clone Trajectron++
+- Clone and patch Trajectron++
 
 ```sh
-git clone xxxxxxxxxxxxxxxxxxxxxx
-git checkout severity-estimation
+git clone https://github.com/StanfordASL/Trajectron-plus-plus.git
+cd Trajectron-plus-plus
+git checkout 1031c7bd1a444273af378c1ec1dcca907ba59830
+git apply ../perp-fail-severity/patches/trajectron.patch
+cd ..
 ```
 
-- NuPlan (custom)
+- Clone and patch NuPlan-devkit
 
 ```sh
-git clone xxxxxxxxxxxxxxxxxxxxxx
-git checkout severity-estimation
+git clone -b nuplan-devkit-v1.1 https://github.com/motional/nuplan-devkit.git
+cd nuplan-devkit
+git apply ../perp-fail-severity/patches/nuplan-v1.1.patch
+cd ..
 ```
 
-- Install all dependencies (it might take a while)
+- Install all dependencies
 
 ```sh
-cd severity-estimation
+cd perp-fail-severity
 poetry install
 ```
 
 This will set up the virtual environment with everything you need to run the code.
 
-## Run
+Note: by default this repository uses CPU-only JAX.
+If you want to use the GPU version (which requires additional dependencies), comment L24 in `pyproject.toml` and and uncomment L25.
+Then run `poetry install` or `poetry update` if you installed the dependencies already.
+
+Before being able to run the code you must precompute the HJ-Reachability lookup table.
+To do so, run
 
 ```sh
-poetry run python3 main.py
+poetry run python3 precompute_value_function.py
 ```
 
-To generate the plots and run the scenario visualization run
+## Run
+
+### Configuration
+
+The configuration is done through the `configs/general.yaml` file.
+To read more about configuration read the [configuration guide](/docs/configuration.md).
+
+### Run the code
+
+To run the code, run
 
 ```sh
-poetry run python3 viz.py experiments/2021-07-01_15-00-00 --nuboard
+poetry run main
+```
+
+To visualize the scenario with nuBoard, run
+
+```sh
+poetry run viz experiments/2021-07-01_15-00-00 --nuboard
 ```
 
 where `experiments/2021-07-01_15-00-00` is the path to the experiment folder.
 
-### Profiling
+You get generate a report with
 
-To profile the code run `poetry run python3 -m cProfile -o main.prof main.py`, then read the profile outputs with `poetry run python3 -m pstats main.prof`.
-
-## Configuration
-
-The configuration is done through the `configs/config.yaml` file.
-
-### Scenarios
-
-The most important part is the `scenarios` section, where you can specify which scenarios you want to run.
-There are two modes you might want to run the code: _by scenario type_ or _by scenario name (token)_.
-
-#### By scenario type
-
-To run the code by scenario type, you need to specify the `scenario_types` and `limit_scenarios_per_type` fields in the `scenarios` section.
-
-```yaml
-scenarios:
-  scenario_types:
-    - starting_left_turn
-    - starting_right_turn
-    - traversing_intersection
-    - starting_unprotected_cross_turn
-    - following_lane_with_slow_lead
-    - stopping_with_lead
-  limit_scenarios_per_type: 3
+```sh
+poetry run viz experiments/2021-07-01_15-00-00 --summary
 ```
 
-#### By scenario name (token)
+or generate all plots (risk, timing, and confusion matrices) with
 
-It is also possible to specify a list of scenarios, or example:
-
-```yaml
-scenarios:
-  -
-    type: chaning_lane_to_left
-    log: 2021.06.07.18.53.26_veh-26_00005_00427
-    name: a59a8c3490f154e2
-  -
-    type: chaning_lane_to_left
-    log: 2021.06.08.14.35.24_veh-26_02555_03004
-    name: 19e8f24c7a975b40
-  -
-    type: on_intersection
-    log: 2021.05.12.22.00.38_veh-35_01008_01518
-    name: 69e109f6e2a85ab4
+```sh
+poetry run viz experiments/2021-07-01_15-00-00 --plot-all
 ```
 
-### Failures
-
-At the moment the failures are specified in the `main.py` file.
-The class `FaultInjectionManager` takes as input a list of failures and takes care of injecting the failures in each scenario.
-
-Each failure mode act on specific agents specified in the file `/configs/failures/autogenerated.yaml` (for HJ reachability based choice) or `/configs/failures/handpicked.yaml` (for a previous manual selection).
-Which of the two files is used is specified in the `configs/config.yaml` file.
 
 ## Additional tasks
 
@@ -170,9 +150,22 @@ This will check that staged and committed files are compliant.
 
 ## FAQ
 
-- To use nuBoard from a remote machine you might need to setup port forwarding. On your machine run `ssh -NfL localhost:5006:localhost:5006 username@XXXXX.com`.
+- To use nuBoard from a remote machine you might need to setup port forwarding. On your machine run `ssh -NfL localhost:5006:localhost:5006 <user>@<remote>`.
 - To omit debug log, run `export LOGURU_LEVEL=INFO` in the terminal session
+
+## Citation
+
+If you use this code or the dataset, please cite the following paper:
+
+```
+@article{antonante23rss-perceptionFailureSeverity,
+  title={Task-Aware Risk Estimation of Perception Failures for Autonomous Vehicles},
+  author={P. Antonante, S. Veer, K. Leung, X. Weng, L. Carlone and M. Pavone},
+  year={2023}
+}
+```
 
 ## Licence
 
 The source code is released under the [NSCL licence](https://github.com/NVlabs/perp-fail-severity/blob/main/LICENSE.md). The preprocessed dataset and pretrained models are under the [CC BY-NC-SA 4.0 licence](https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
+

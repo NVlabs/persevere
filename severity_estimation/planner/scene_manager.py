@@ -37,9 +37,7 @@ class SceneManager:
     def update(self, ego_states, observations, steps):
         # Setup scene for Trajectron
         if steps == -1:
-            buffer_ind = list(
-                range(0, len(ego_states), round(1 / self._subsample_ratio))
-            )
+            buffer_ind = list(range(0, len(ego_states), round(1 / self._subsample_ratio)))
             steps += len(buffer_ind)
             ego_state = ego_states[0]
             self.scene.x_min = ego_state.center.x - self._scene_radius
@@ -51,9 +49,7 @@ class SceneManager:
             steps += 1
         # Add current ego, vehicles, and pedestrians to the scene
         for i in buffer_ind:
-            add_observations_to_scene(
-                self._ctx, self.scene, ego_states[i], observations[i]
-            )
+            add_observations_to_scene(self._ctx, self.scene, ego_states[i], observations[i])
         return steps
 
     @property

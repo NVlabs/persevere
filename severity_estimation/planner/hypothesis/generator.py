@@ -69,16 +69,12 @@ class HypothesisGenerator:
         else:
             self._use_ground_truth = False
         if hasattr(cfg.hypothesis_generator, "velocity_magnitude"):
-            assert (
-                ~self._use_ground_truth
-            ), "Cannot fix velocity magnitude if using ground truth"
+            assert ~self._use_ground_truth, "Cannot fix velocity magnitude if using ground truth"
             self._velocity_magnitude = cfg.hypothesis_generator.velocity_magnitude
         else:
             self._velocity_magnitude = set()
         if hasattr(cfg.hypothesis_generator, "velocity_noise"):
-            assert (
-                ~self._use_ground_truth
-            ), "Cannot add velocity noise if using ground truth"
+            assert ~self._use_ground_truth, "Cannot add velocity noise if using ground truth"
             self._velocity_noise = dict()
             for cat, inst in cfg.hypothesis_generator.velocity_noise.items():
                 if inst is not None:
@@ -86,9 +82,7 @@ class HypothesisGenerator:
         else:
             self._velocity_noise = set()
         if hasattr(cfg.hypothesis_generator, "position_noise"):
-            assert (
-                ~self._use_ground_truth
-            ), "Cannot add position noise if using ground truth"
+            assert ~self._use_ground_truth, "Cannot add position noise if using ground truth"
             self._position_noise = dict()
             for cat, inst in cfg.hypothesis_generator.position_noise.items():
                 if inst is not None:
@@ -103,9 +97,7 @@ class HypothesisGenerator:
 
     def _add_velocity_noise(self, agent: Agent, noise):
         theta, magnitude = noise.sample()
-        rot = np.array(
-            [[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]]
-        )
+        rot = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
         v = np.dot(rot, agent.velocity.array)
         agent.velocity.x, agent.velocity.y = v[0], v[1]
         orientation = np.arctan2(agent.velocity.y, agent.velocity.x)
@@ -128,9 +120,7 @@ class HypothesisGenerator:
         traffic_lights: Optional[List[FaultyTrafficLightStatusData]] = None,
     ):
         if self._use_ground_truth:
-            hyp_observations = [
-                observations[i].gt_tracked_objects for i in range(len(observations))
-            ]
+            hyp_observations = [observations[i].gt_tracked_objects for i in range(len(observations))]
         else:
             hyp_observations = []
             for obs in observations:
@@ -152,9 +142,7 @@ class HypothesisGenerator:
 
         violations = []
         if traffic_lights is not None:
-            traffic_light_failures = frozenset().union(
-                *[tl.active_failures for tl in traffic_lights]
-            )
+            traffic_light_failures = frozenset().union(*[tl.active_failures for tl in traffic_lights])
             if "TrafficLightMisdetection" in traffic_light_failures:
                 # TODO[antonap]: should activate only if the ego is actually crossing the intersection
                 violations.append(TraffcRuleViolation.RED_LIGHT)

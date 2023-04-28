@@ -1,0 +1,269 @@
+diff --git a/nuplan/planning/nuboard/base/plot_data.py b/nuplan/planning/nuboard/base/plot_data.py
+index f3e87bf..f2ecf8f 100644
+--- a/nuplan/planning/nuboard/base/plot_data.py
++++ b/nuplan/planning/nuboard/base/plot_data.py
+@@ -1,8 +1,23 @@
++# SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
++# SPDX-License-Identifier: Apache-2.0
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++# http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
+ from __future__ import annotations
+
+ import threading
+ from dataclasses import dataclass, field
+-from typing import Any, Dict, List, NamedTuple, Optional, Union
++from typing import Any, Dict, List, Tuple, NamedTuple, Optional, Union
+
+ import numpy as np
+ from bokeh.models import Button, ColumnDataSource, GlyphRenderer, HoverTool, LayoutDOM, Legend, Slider, Title
+@@ -39,6 +54,12 @@ class BokehAgentStates(NamedTuple):
+     velocity_ys: List[float]  # [m/s], A list of velocity in y (body frame).
+     speeds: List[float]  # [m/s], A list of speed.
+     headings: List[float]  # [m], a list of headings
++    agent_failures: List[Tuple[str]]  # A list of agent's failures
++    fill_color: str
++    fill_alpha: float
++    line_color: str
++    line_width: float
++    line_style: str
+
+
+ @dataclass(frozen=True)
+@@ -414,14 +435,15 @@ class AgentStatePlot:
+                 plot = self.plots.get(category, None)
+                 data = dict(data_source.data)
+                 if plot is None:
+-                    agent_color = simulation_tile_agent_style.get(category)
++                    # agent_color = simulation_tile_agent_style.get(category)
+                     self.plots[category] = main_figure.multi_polygons(
+                         xs="xs",
+                         ys="ys",
+-                        fill_color=agent_color["fill_color"],
+-                        fill_alpha=agent_color["fill_alpha"],
+-                        line_color=agent_color["line_color"],
+-                        line_width=agent_color["line_width"],
++                        fill_color="fill_color",
++                        fill_alpha="fill_alpha",
++                        line_color="line_color",
++                        line_width="line_width",
++                        line_dash="line_style",
+                         source=data,
+                     )
+                     agent_hover = HoverTool(
+@@ -435,6 +457,7 @@ class AgentStatePlot:
+                             ("heading [rad]", "@headings{0.2f}"),
+                             ("type", "@agent_type"),
+                             ("track token", "@track_token"),
++                            ("Failures", "@agent_failures"),
+                         ],
+                     )
+                     main_figure.add_tools(agent_hover)
+@@ -454,8 +477,8 @@ class AgentStatePlot:
+                 if not isinstance(sample.observation, DetectionsTracks):
+                     continue
+
++                frame_dict = dict()
+                 tracked_objects = sample.observation.tracked_objects
+-                frame_dict = {}
+                 for tracked_object_type_name, tracked_object_type in tracked_object_types.items():
+                     corner_xs = []
+                     corner_ys = []
+@@ -468,8 +491,26 @@ class AgentStatePlot:
+                     velocity_ys = []
+                     speeds = []
+                     headings = []
+-
++                    agent_failures = []
++                    fill_color = []
++                    fill_alpha = []
++                    line_color = []
++                    line_width = []
++                    line_style = []
++
++                    # Add all obstacles the ego sees
++                    tracked_objects = sample.observation.tracked_objects
+                     for tracked_object in tracked_objects.get_tracked_objects_of_type(tracked_object_type):
++                        if (
++                            hasattr(sample.observation, "failures_by_token")
++                            and tracked_object.track_token
++                            in sample.observation.failures_by_token
++                        ):
++                            active_failures = tuple(sample.observation.failures_by_token[
++                                tracked_object.track_token
++                            ])
++                        else:
++                            active_failures = tuple()
+                         agent_corners = tracked_object.box.all_corners()
+                         corners_x = [corner.x for corner in agent_corners]
+                         corners_y = [corner.y for corner in agent_corners]
+@@ -486,6 +527,70 @@ class AgentStatePlot:
+                         agent_types.append(tracked_object_type.fullname)
+                         track_ids.append(self._get_track_id(tracked_object.track_token))
+                         track_tokens.append(tracked_object.track_token)
++                        agent_failures.append(active_failures)
++                        agent_color = simulation_tile_agent_style.get(tracked_object_type_name)
++                        fill_color.append(agent_color["fill_color"])
++                        fill_alpha.append(agent_color["fill_alpha"] if active_failures else agent_color["fill_alpha"]*0.5)
++                        line_color.append(agent_color["line_color"] if not active_failures else "#eb4034")
++                        line_width.append(agent_color["line_width"] if not active_failures else 3)
++                        line_style.append("solid")
++
++                    # Then the agents from the hypothesis that are subject to a failure
++                    if hasattr(sample.observation, "gt_tracked_objects"):
++                        tracked_objects = sample.observation.gt_tracked_objects
++                        for tracked_object in tracked_objects.get_tracked_objects_of_type(tracked_object_type):
++                            if (tracked_object.track_token in sample.observation.failures_by_token):
++                                active_failures = tuple(sample.observation.failures_by_token[
++                                    tracked_object.track_token
++                                ])
++                                agent_corners = tracked_object.box.all_corners()
++                                corners_x = [corner.x for corner in agent_corners]
++                                corners_y = [corner.y for corner in agent_corners]
++                                corners_x.append(corners_x[0])
++                                corners_y.append(corners_y[0])
++                                corner_xs.append([[corners_x]])
++                                corner_ys.append([[corners_y]])
++                                center_xs.append(tracked_object.center.x)
++                                center_ys.append(tracked_object.center.y)
++                                velocity_xs.append(tracked_object.velocity.x)
++                                velocity_ys.append(tracked_object.velocity.y)
++                                speeds.append(tracked_object.velocity.magnitude())
++                                headings.append(tracked_object.center.heading)
++                                agent_types.append(tracked_object_type.fullname)
++                                track_ids.append(self._get_track_id(tracked_object.track_token))
++                                track_tokens.append(tracked_object.track_token)
++                                agent_failures.append(active_failures)
++                                agent_color = simulation_tile_agent_style.get(tracked_object_type_name)
++                                fill_color.append(agent_color["fill_color"])
++                                fill_alpha.append(agent_color["fill_alpha"]*0.5)
++                                line_color.append(agent_color["line_color"] if not active_failures else "#eb4034")
++                                line_width.append(agent_color["line_width"] if not active_failures else 3)
++                                line_style.append("solid" if not active_failures else "dashed")
++
++                    ego = sample.ego_state
++                    if hasattr(ego, "has_failures") and ego.has_failures:
++                            agent_corners = ego.gt_agent.box.all_corners()
++                            corners_x = [corner.x for corner in agent_corners]
++                            corners_y = [corner.y for corner in agent_corners]
++                            corners_x.append(corners_x[0])
++                            corners_y.append(corners_y[0])
++                            corner_xs.append([[corners_x]])
++                            corner_ys.append([[corners_y]])
++                            center_xs.append(ego.gt_center.x)
++                            center_ys.append(ego.gt_center.y)
++                            velocity_xs.append(ego.gt_agent.velocity.x)
++                            velocity_ys.append(ego.gt_agent.velocity.y)
++                            speeds.append(ego.gt_agent.velocity.magnitude())
++                            headings.append(ego.gt_agent.center.heading)
++                            agent_types.append("GT EGO")
++                            track_ids.append("EGO")
++                            track_tokens.append("EGO")
++                            agent_failures.append(tuple(ego.active_failures))
++                            fill_color.append("white")
++                            fill_alpha.append(0.1)
++                            line_color.append(simulation_tile_trajectory_style["ego"]["line_color"])
++                            line_width.append(simulation_tile_trajectory_style["ego"]["line_width"])
++                            line_style.append("dashed")
+
+                     agent_states = BokehAgentStates(
+                         xs=corner_xs,
+@@ -499,6 +604,12 @@ class AgentStatePlot:
+                         velocity_ys=velocity_ys,
+                         speeds=speeds,
+                         headings=headings,
++                        agent_failures=agent_failures,
++                        fill_color=fill_color,
++                        fill_alpha=fill_alpha,
++                        line_color=line_color,
++                        line_width=line_width,
++                        line_style=line_style,
+                     )
+
+                     frame_dict[tracked_object_type_name] = ColumnDataSource(agent_states._asdict())
+diff --git a/nuplan/planning/nuboard/tabs/configuration_tab.py b/nuplan/planning/nuboard/tabs/configuration_tab.py
+index 3b5b9c0..439dd9a 100644
+--- a/nuplan/planning/nuboard/tabs/configuration_tab.py
++++ b/nuplan/planning/nuboard/tabs/configuration_tab.py
+@@ -1,3 +1,18 @@
++# SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
++# SPDX-License-Identifier: Apache-2.0
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++# http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
+ import base64
+ import io
+ import logging
+@@ -56,9 +71,12 @@ class ConfigurationTab:
+                 experiment_file_path_stem = file_path.current_path
+             else:
+                 experiment_file_path_stem = file_path.metric_main_path
+-            experiment_file_path_stem = "/".join(
+-                [experiment_file_path_stem.parts[-2], experiment_file_path_stem.parts[-1]]
+-            )
++            try:
++                experiment_file_path_stem = "/".join(
++                    [experiment_file_path_stem.parts[-2], experiment_file_path_stem.parts[-1]]
++                )
++            except:
++                pass
+             experiment_paths.append(experiment_file_path_stem)
+         return experiment_paths
+
+diff --git a/nuplan/planning/scenario_builder/nuplan_db/nuplan_scenario.py b/nuplan/planning/scenario_builder/nuplan_db/nuplan_scenario.py
+index ff2a554..e4f6d44 100644
+--- a/nuplan/planning/scenario_builder/nuplan_db/nuplan_scenario.py
++++ b/nuplan/planning/scenario_builder/nuplan_db/nuplan_scenario.py
+@@ -1,3 +1,18 @@
++# SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
++# SPDX-License-Identifier: Apache-2.0
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++# http://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++
+ from __future__ import annotations
+
+ import os
+@@ -321,6 +336,13 @@ class NuPlanScenario(AbstractScenario):
+         for lidar_pc in self._find_matching_lidar_pcs(iteration, num_samples, time_horizon, False):
+             yield DetectionsTracks(extract_tracked_objects(lidar_pc.token, self._log_file, future_trajectory_sampling))
+
++    def get_past_traffic_light_status(self, iteration:int, time_horizon:float, num_samples:Optional[int]=None) -> Generator[TrafficLightStatusData, None, None]:
++        for lidar_pc in self._find_matching_lidar_pcs(iteration, num_samples, time_horizon, True):
++            yield cast(
++                Generator[TrafficLightStatusData, None, None],
++                get_traffic_light_status_for_lidarpc_token_from_db(self._log_file, lidar_pc.token),
++            )
++
+     def get_future_tracked_objects(
+         self,
+         iteration: int,

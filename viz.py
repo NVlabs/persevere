@@ -15,7 +15,8 @@ from tqdm import tqdm
 from postprocessor import PostprocessedResults, SimpleRiskData, classify
 
 mpl.style.use("seaborn")
-sns.set()
+sns.set_style("whitegrid")
+sns.set_context("paper", font_scale=2, rc={"lines.linewidth": 2.5})
 import warnings
 
 import numpy as np
@@ -25,13 +26,13 @@ warnings.filterwarnings("ignore")
 
 from nuplan.common.actor_state.vehicle_parameters import get_pacifica_parameters
 from nuplan.planning.nuboard.nuboard import NuBoard
-from nuplan.planning.scenario_builder.nuplan_db.nuplan_scenario_builder import (
-    NuPlanScenarioBuilder,
-)
+from nuplan.planning.scenario_builder.nuplan_db.nuplan_scenario_builder import NuPlanScenarioBuilder
 from omegaconf import OmegaConf
 from rich import print as rprint
 from rich.console import Console
 from rich.table import Table
+
+TIMESTEP = 0.05
 
 
 def _std_stats(values):
@@ -47,40 +48,26 @@ def _std_stats(values):
 
 
 def _timing_info(cfg, results):
-    timing = defaultdict(
-        lambda: defaultdict(lambda: {"total": [], "risk": [], "prediction": []})
-    )
+    timing = defaultdict(lambda: defaultdict(lambda: {"total": [], "risk": [], "prediction": []}))
     for log in results.risk:
         for scenario in results.risk[log]:
-            cost_runtimes = results.experiment_results[log][
-                scenario
-            ].compute_cost_runtimes
+            cost_runtimes = results.experiment_results[log][scenario].compute_cost_runtimes
             pred_runtime = results.experiment_results[log][scenario].prediction_runtimes
             for alg in results.risk[log][scenario]:
                 for param in results.risk[log][scenario][alg]:
                     risk_values = results.risk[log][scenario][alg][param]
                     timing[alg][param]["risk"].extend(
-                        [
-                            cost_runtimes[step][alg] + risk_values[step].timing
-                            for step in risk_values.keys()
-                        ]
+                        [cost_runtimes[step][alg] + risk_values[step].timing for step in risk_values.keys()]
                     )
                     if alg == "hj":
                         timing[alg][param]["total"].extend(
-                            [
-                                risk_values[step].timing + cost_runtimes[step][alg]
-                                for step in risk_values.keys()
-                            ]
+                            [risk_values[step].timing + cost_runtimes[step][alg] for step in risk_values.keys()]
                         )
                     else:
-                        timing[alg][param]["prediction"].extend(
-                            [pred_runtime[step] for step in risk_values.keys()]
-                        )
+                        timing[alg][param]["prediction"].extend([pred_runtime[step] for step in risk_values.keys()])
                         timing[alg][param]["total"].extend(
                             [
-                                risk_values[step].timing
-                                + cost_runtimes[step][alg]
-                                + pred_runtime[step]
+                                risk_values[step].timing + cost_runtimes[step][alg] + pred_runtime[step]
                                 for step in risk_values.keys()
                             ]
                         )
@@ -99,7 +86,7 @@ def _detection_info(crg, results):
                         # fmt: off
                         earliest_collision = results.experiment_results[log][scenario].earliest_collision_time
                         earliest_alarm =results.experiment_results[log][scenario].timesteps_us[step]
-                        alarm_to_collision[alg][param].append((earliest_collision - earliest_alarm)/1e6) 
+                        alarm_to_collision[alg][param].append((earliest_collision - earliest_alarm)/1e6)
                         # fmt: on
     # Stats
     stats = defaultdict(lambda: defaultdict(dict))
@@ -144,12 +131,8 @@ def _compute_summary(cfg, results):
     for alg in detection:
         for param in detection[alg]:
             summary[alg][param] = dict(detection[alg][param])
-            summary[alg][param]["timing"] = {
-                k: _std_stats(v) for k, v in timing_info[alg][param].items()
-            }
-            summary[alg][param]["alarm-to-collision"] = _std_stats(
-                summary[alg][param]["alarm-to-collision"]
-            )
+            summary[alg][param]["timing"] = {k: _std_stats(v) for k, v in timing_info[alg][param].items()}
+            summary[alg][param]["alarm-to-collision"] = _std_stats(summary[alg][param]["alarm-to-collision"])
     return summary
 
 
@@ -167,15 +150,11 @@ def generate_summary(cfg, results, experiment_folder):
         rprint("[bold magenta]Hyp. Generator[/bold magenta]:  Ground Truth")
     else:
         keys = [
-            str(k).replace("_", " ").capitalize()
-            for k in cfg.hypothesis_generator.keys()
-            if k != "use_ground_truth"
+            str(k).replace("_", " ").capitalize() for k in cfg.hypothesis_generator.keys() if k != "use_ground_truth"
         ]
         rprint(f"[bold magenta]Hyp. Generator[/bold magenta]:  {keys}")
     # Risk Configuration
-    rprint(
-        f"[bold magenta]Risk Type[/bold magenta]: {' '*6}{cfg.risk.copula.type.capitalize()}"
-    )
+    rprint(f"[bold magenta]Risk Type[/bold magenta]: {' '*6}{cfg.risk.copula.type.capitalize()}")
     stats = _compute_summary(cfg, results)
     # Runtime Table
     table = Table(title="Runtime")
@@ -183,20 +162,17 @@ def generate_summary(cfg, results, experiment_folder):
     table.add_column("Param", justify="center")
     table.add_column("Total", justify="center")
     table.add_column("Prediction", justify="center")
-    table.add_column("Cost", justify="center")
     table.add_column("Risk", justify="center")
     for alg in sorted(stats.keys(), reverse=True):
         for param in sorted(stats[alg].keys(), reverse=True):
             tot = stats[alg][param]["timing"]["total"]["mean"]
             pred = stats[alg][param]["timing"]["prediction"]["mean"]
-            cost = stats[alg][param]["timing"]["cost"]["mean"]
             risk = stats[alg][param]["timing"]["risk"]["mean"]
             table.add_row(
                 alg,
                 str(param),
                 _prt(tot, None),
                 _prt(pred, None) + f" ({_prt(pred/tot*100)}%)",
-                _prt(cost, None) + f" ({_prt(cost/tot*100)}%)",
                 _prt(risk, None, ".4f") + f" ({_prt(risk/tot*100, fmt='.3f')}%)",
             )
     console.print(table)
@@ -204,25 +180,9 @@ def generate_summary(cfg, results, experiment_folder):
     # Results Table
     kmax = {"f1_score", "precision", "recall", "accuracy"}
     best = (
-        {k: max([stats[a][q][k] for a in stats for q in stats[a]]) for k in kmax}
-        | {
-            "alarm-to-collision": max(
-                [
-                    stats[a][q]["alarm-to-collision"]["mean"]
-                    for a in stats
-                    for q in stats[a]
-                ]
-            )
-        }
-        | {
-            "timing": min(
-                [
-                    stats[a][q]["timing"]["total"]["mean"]
-                    for a in stats
-                    for q in stats[a]
-                ]
-            )
-        }
+        {k: max(stats[a][q][k] for a in stats for q in stats[a]) for k in kmax}
+        | {"alarm-to-collision": max(stats[a][q]["alarm-to-collision"]["mean"] for a in stats for q in stats[a])}
+        | {"timing": min(stats[a][q]["timing"]["total"]["mean"] for a in stats for q in stats[a])}
     )
     # Performance Table
     table = Table(title="Results")
@@ -255,22 +215,14 @@ def generate_summary(cfg, results, experiment_folder):
     console.print(table)
 
 
-def _generate_risk_plot(
-    data, threshold, collision_step, fname, smoothing_sigma: Optional[float] = None
-):
+def _generate_risk_plot(data, threshold, collision_step, fname, smoothing_sigma: Optional[float] = None):
     if all([isinstance(x, SimpleRiskData) for x in data.values()]):
-        _generate_copula_risk_plot(
-            data, threshold, collision_step, fname, smoothing_sigma
-        )
+        _generate_copula_risk_plot(data, threshold, collision_step, fname, smoothing_sigma)
     else:
-        _generate_bound_risk_plot(
-            data, threshold, collision_step, fname, smoothing_sigma
-        )
+        _generate_bound_risk_plot(data, threshold, collision_step, fname, smoothing_sigma)
 
 
-def _generate_copula_risk_plot(
-    data, threshold, collision_step, fname, smoothing_sigma: Optional[float] = None
-):
+def _generate_copula_risk_plot(data, threshold, collision_step, fname, smoothing_sigma: Optional[float] = None):
     df = pd.DataFrame.from_dict(
         {
             "Frame": [int(k) for k in data.keys()],
@@ -298,12 +250,10 @@ def _generate_copula_risk_plot(
     plt.close()
 
 
-def _generate_bound_risk_plot(
-    data, threshold, collision_step, fname, smoothing_sigma: Optional[float] = None
-):
+def _generate_bound_risk_plot(data, threshold, collision_step, fname, smoothing_sigma: Optional[float] = None):
     df = pd.DataFrame.from_dict(
         {
-            "Frame": [int(k) for k in data.keys()],
+            "Frame": [float(k) * TIMESTEP for k in data.keys()],
             "Lower": [k.upper for k in data.values()],
             "Upper": [k.lower for k in data.values()],
         }
@@ -312,13 +262,18 @@ def _generate_bound_risk_plot(
         df["Lower"] = gaussian_filter1d(df.Lower, sigma=smoothing_sigma)
         df["Upper"] = gaussian_filter1d(df.Lower, sigma=smoothing_sigma)
     plt.figure()
-    sns.lineplot(data=df, x="Frame", y="Lower", color="green")
-    sns.lineplot(data=df, x="Frame", y="Upper", color="red")
-    plt.fill_between(df.Frame, df.Lower, df.Upper, color="b", alpha=0.6)
+    sns.lineplot(data=df, x="Frame", y="Upper", color="#4FA800")
+    sns.lineplot(data=df, x="Frame", y="Lower", color="#A71D05")
+    plt.fill_between(df.Frame, df.Lower, df.Upper, color="#8EA7E9", alpha=0.4)
     if collision_step is not None:
-        plt.gca().axvline(collision_step, color="blue", linestyle="dashed")
-    for th in threshold:
-        plt.gca().axhline(th, color="red", linestyle="dashed")
+        plt.gca().axvline(collision_step * TIMESTEP, color="#114EA8", linestyle="dashed")
+    # for th in threshold:
+    # plt.gca().axhline(th, color="red", linestyle="dashed")
+    plt.gca().axhline(threshold[-1], color="#FF0032", linestyle="dashed")
+    plt.gca().set(xlabel="Time [s]", ylabel="Risk")
+    plt.gca().set_xlim(left=1)
+    plt.gca().tick_params(bottom=False)
+    plt.ylim(-0.01, 1.01)
     plt.tight_layout()
     plt.savefig(fname, dpi=72)
     plt.close()
@@ -326,21 +281,12 @@ def _generate_bound_risk_plot(
 
 def _generate_timing_plot(timing, fname, max_t=None):
     def _histplot(data, fname):
-        mean = np.mean(data)
-        median = np.median(data)
-        std = np.std(data)
         plt.figure()
         ax = sns.histplot(data=data, stat="percent")
-        ax.set(xlabel="Runtime")
-        plt.figtext(
-            0.5,
-            0.01,
-            f"Mean: {mean:.2f} Median: {median:.2f} Std: {std:.2f}",
-            ha="center",
-            fontsize=12,
-        )
+        ax.set(xlabel="Runtime [s]")
+        ax.set(ylabel="Percent [%]")
         if max_t is not None:
-            plt.xlim(-0.1, max_t)
+            plt.xlim(0, max_t)
         plt.tight_layout()
         plt.savefig(fname, dpi=72)
 
@@ -349,19 +295,18 @@ def _generate_timing_plot(timing, fname, max_t=None):
 
 def _generate_confusion_matrix_plot(cm, fname):
     plt.figure()
-    group_names = ["True Neg", "False Pos", "False Neg", "True Pos"]
+    group_names = ["True Neg.", "False Pos.", "False Neg.", "True Pos."]
     confusion_matrix = (cm.tn, cm.fp, cm.fn, cm.tp)
     group_counts = [f"{value:0.0f}" for value in confusion_matrix]
-    group_percentages = [
-        f"{value:.2%}" for value in confusion_matrix / np.sum(confusion_matrix)
-    ]
-    labels = [
-        f"{v1}\n{v2}\n{v3}"
-        for v1, v2, v3 in zip(group_names, group_counts, group_percentages)
-    ]
-    labels = np.asarray(labels).reshape(2, 2)
+    group_percentages = [f"{value:.2%}" for value in confusion_matrix / np.sum(confusion_matrix)]
+    labels = [f"{v1}\n{v2}\n{v3}" for v1, v2, v3 in zip(group_names, group_counts, group_percentages)]
+    annot = np.asarray(labels).reshape(2, 2)
     y = np.array(confusion_matrix).reshape((2, 2)) / np.sum(confusion_matrix)
-    sns.heatmap(y, annot=labels, fmt="", cmap="Blues", cbar=False)
+    labels = ["Low-Risk", "High-Risk"]
+    cm_ = pd.DataFrame(y, index=labels, columns=labels)
+    cm_.index.name = 'Actual'
+    cm_.columns.name = 'Predicted'
+    sns.heatmap(cm_, annot=annot, fmt="", cmap="Blues", cbar=False)
     plt.tight_layout()
     plt.savefig(fname, dpi=72)
 
@@ -384,27 +329,19 @@ def generate_plots(
     for log in risk:
         for scenario in risk[log]:
             fname = output_dir / f"{scenario}.pdf"
-            cost_runtimes = results.experiment_results[log][
-                scenario
-            ].compute_cost_runtimes
+            cost_runtimes = results.experiment_results[log][scenario].compute_cost_runtimes
             pred_runtime = results.experiment_results[log][scenario].prediction_runtimes
             risk_values = risk[log][scenario][alg][param]
-            earliest_collision = results.experiment_results[log][
-                scenario
-            ].earliest_collision_time
+            earliest_collision = results.experiment_results[log][scenario].earliest_collision_time
             if isfinite(earliest_collision):
                 delta = {
                     step: abs(t - earliest_collision)
-                    for step, t in results.experiment_results[log][
-                        scenario
-                    ].timesteps_us.items()
+                    for step, t in results.experiment_results[log][scenario].timesteps_us.items()
                 }
                 j = [key for key, val in delta.items() if val == min(delta.values())][0]
             else:
                 j = None
-            assert set(cost_runtimes.keys()) == set(
-                risk_values.keys()
-            ), f"Number of steps does not match for alg {alg}"
+            assert set(cost_runtimes.keys()) == set(risk_values.keys()), f"Number of steps does not match for alg {alg}"
             if alg == "ttc" or alg == "msd":
                 th = cfg.risk.copula.threshold.thresholds
             elif alg == "cp":
@@ -419,19 +356,14 @@ def generate_plots(
     # Timing
     for elem in timing[alg][param]:
         fname = output_dir / f"timing_{elem}.pdf"
-        _generate_timing_plot(timing[alg][param][elem], fname)
+        if elem == "prediction":
+            max_t = 1.2
+        elif elem == "risk":
+            max_t = 0.35
+        elif elem == "total":
+            max_t = 1.35
+        _generate_timing_plot(timing[alg][param][elem], fname, max_t=max_t)
         pbar.update(1)
-
-    # fname = output_dir / "total_timing.pdf"
-    # _generate_timing_plot(tot_timing, fname, max_t=1.5)
-    # pbar.update(1)
-    # fname = output_dir / "prediction_timing.pdf"
-    # _generate_timing_plot(prediction_runtimes, fname, max_t=1.5)
-    # pbar.update(1)
-    # fname = output_dir / "severity_estimation_timing.pdf"
-    # _generate_timing_plot(sev_est_runtimes, fname, max_t=0.3)
-    # pbar.update(1)
-    # Confusion Matrix
     fname = output_dir / "confusion_matrix.pdf"
     if results.confusion_matrix is not None:
         _generate_confusion_matrix_plot(results.confusion_matrix[alg][param], fname)
@@ -466,9 +398,7 @@ def generate_roc_curve(cfg, results, experiment_folder):
     plt.savefig(fname, dpi=72)
 
 
-def confusion_matrix_report(
-    cfg, alg, param, results, experiment_folder: Optional[Path] = None
-):
+def confusion_matrix_report(cfg, alg, param, results, experiment_folder: Optional[Path] = None):
     confusion_matrix = {"tp": list(), "fp": list(), "tn": list(), "fn": list()}
     for log in results.experiment_results:
         for scenario in results.risk[log]:

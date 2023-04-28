@@ -5,9 +5,7 @@ T = TypeVar("T")
 
 class RiskThreshold:
     def __init__(self, thresholds: List[float], labels: List[T]):
-        assert (
-            len(labels) == len(thresholds) + 1
-        ), "Number of labels must be one more than number of thresholds"
+        assert len(labels) == len(thresholds) + 1, "Number of labels must be one more than number of thresholds"
         assert all(
             [t1 < t2 for t1, t2 in zip(thresholds[:-1], thresholds[1:])]
         ), "Thresholds must be in increasing order"
@@ -17,10 +15,7 @@ class RiskThreshold:
         # Generate range-based thresholds
         self._thresholds = (
             [(0, thresholds[0], labels[0])]
-            + [
-                (t1, t2, l)
-                for t1, t2, l in zip(thresholds[:-1], thresholds[1:], labels[1:])
-            ]
+            + [(t1, t2, l) for t1, t2, l in zip(thresholds[:-1], thresholds[1:], labels[1:])]
             + [(thresholds[-1], 1.0 + 1e-6, labels[-1])]
         )
         # 1+1e-6 to avoid missing 1.0 as highest threshold

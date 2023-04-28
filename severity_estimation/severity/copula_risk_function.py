@@ -2,15 +2,7 @@ from collections import namedtuple
 
 import numpy as np
 import pandas as pd
-from copulae import (
-    ClaytonCopula,
-    EmpiricalCopula,
-    FrankCopula,
-    GaussianCopula,
-    GumbelCopula,
-    StudentCopula,
-    pseudo_obs,
-)
+from copulae import EmpiricalCopula, GaussianCopula, GumbelCopula, pseudo_obs
 from scipy import optimize
 from statsmodels.distributions.empirical_distribution import ECDF
 

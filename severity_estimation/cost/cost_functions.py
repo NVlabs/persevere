@@ -15,11 +15,10 @@ from severity_estimation.planner.query_utils import (
 )
 from severity_estimation.trajectron.datatypes import Environment, Node, Scene
 
+
 # Cost functions
 def distance_to_goal_cost(node: Node, goal_pos, timesteps, cache=None):
-    return distance_to_goal(node, timesteps, goal_pos, cache) / np.linalg.norm(
-        goal_pos, axis=-1
-    )
+    return distance_to_goal(node, timesteps, goal_pos, cache) / np.linalg.norm(goal_pos, axis=-1)
 
 
 def velocity_cost(node: Node, timesteps: np.ndarray, cache=None):
@@ -86,15 +85,9 @@ def distance_to_agent_cost(
 
     queries = [Query.rotated_relative_position, Query.rotated_relative_velocity]
     if predictions is None:
-        states = query_node_and_node(
-            ego_node, agent_node, queries, timesteps, ego_cache, agent_cache, cache
-        )
-        rotated_relative_position = np.expand_dims(
-            states["rotated_relative_position"], axis=0
-        )
-        rotated_relative_velocity = np.expand_dims(
-            states["rotated_relative_velocity"], axis=0
-        )
+        states = query_node_and_node(ego_node, agent_node, queries, timesteps, ego_cache, agent_cache, cache)
+        rotated_relative_position = np.expand_dims(states["rotated_relative_position"], axis=0)
+        rotated_relative_velocity = np.expand_dims(states["rotated_relative_velocity"], axis=0)
     else:
         states = query_node_and_prediction(
             ego_node,
@@ -109,9 +102,7 @@ def distance_to_agent_cost(
         rotated_relative_position = states["rotated_relative_position"]
         rotated_relative_velocity = states["rotated_relative_velocity"]
 
-    returns = _distance_to_agent_cost(
-        rotated_relative_position, rotated_relative_velocity, vi_epsilon, vo_epsilon
-    )
+    returns = _distance_to_agent_cost(rotated_relative_position, rotated_relative_velocity, vi_epsilon, vo_epsilon)
 
     return returns
 
@@ -136,9 +127,7 @@ def likelihood(
         Query.position_likelihood,
         Query.true_position,
     ]
-    agent_cache = query_prediction(
-        agent_node, queries, timesteps, prediction_gmm, agent_cache
-    )
+    agent_cache = query_prediction(agent_node, queries, timesteps, prediction_gmm, agent_cache)
     dist_error = agent_cache["mean_distance_error"]
     likelihood = agent_cache["position_likelihood"]
     likelihood[dist_error < noise_floor] = np.inf
@@ -157,12 +146,8 @@ def likelihood(
     distance = np.linalg.norm(cache["true_relative_position"], axis=-1)
 
     is_close_enough = np.logical_or(
-        np.logical_and(
-            agent_node.type.name == "VEHICLE", distance < VV_significance_distance
-        ),
-        np.logical_and(
-            agent_node.type.name == "PEDESTRIAN", distance < VP_significance_distance
-        ),
+        np.logical_and(agent_node.type.name == "VEHICLE", distance < VV_significance_distance),
+        np.logical_and(agent_node.type.name == "PEDESTRIAN", distance < VP_significance_distance),
     )
 
     likelihood[~is_close_enough] = np.inf
@@ -170,9 +155,7 @@ def likelihood(
     return np.array([likelihood])
 
 
-def drivable_area_violation(
-    node: Node, scene: Scene, map_api: AbstractMap, timesteps, cache=None
-):
+def drivable_area_violation(node: Node, scene: Scene, map_api: AbstractMap, timesteps, cache=None):
     position_shift = [
         scene.x_min + (scene.x_max - scene.x_min) / 2,
         scene.y_min + (scene.y_max - scene.y_min) / 2,
@@ -183,17 +166,13 @@ def drivable_area_violation(
     violation = []
     for position in positions:
         point = Point2D(*position)
-        _, distance_to_drivable_area = map_api.get_distance_to_nearest_map_object(
-            point, SemanticMapLayer.DRIVABLE_AREA
-        )
+        _, distance_to_drivable_area = map_api.get_distance_to_nearest_map_object(point, SemanticMapLayer.DRIVABLE_AREA)
         violation.append(float(distance_to_drivable_area))
 
     return violation
 
 
-def lane_violation_cost(
-    node: Node, scene: Scene, map_api: AbstractMap, timesteps: np.ndarray, cache=None
-):
+def lane_violation_cost(node: Node, scene: Scene, map_api: AbstractMap, timesteps: np.ndarray, cache=None):
     position_shift = [
         scene.x_min + (scene.x_max - scene.x_min) / 2,
         scene.y_min + (scene.y_max - scene.y_min) / 2,
@@ -209,29 +188,19 @@ def lane_violation_cost(
         obj = map_api.get_one_map_object(point, SemanticMapLayer.LANE)
 
         if map_api.is_in_layer(point, SemanticMapLayer.LANE):
-            _, dist_to_baseline = map_api.get_distance_to_nearest_map_object(
-                point, SemanticMapLayer.BASELINE_PATHS
-            )
+            _, dist_to_baseline = map_api.get_distance_to_nearest_map_object(point, SemanticMapLayer.BASELINE_PATHS)
             obj = map_api.get_one_map_object(point, SemanticMapLayer.LANE)
         elif map_api.is_in_layer(point, SemanticMapLayer.INTERSECTION):
-            name, dist_to_baseline = map_api.get_distance_to_nearest_map_object(
-                point, SemanticMapLayer.LANE_CONNECTOR
-            )
+            name, dist_to_baseline = map_api.get_distance_to_nearest_map_object(point, SemanticMapLayer.LANE_CONNECTOR)
             obj = map_api.get_map_object(name, SemanticMapLayer.LANE_CONNECTOR)
         else:
-            _, dist_to_baseline1 = map_api.get_distance_to_nearest_map_object(
-                point, SemanticMapLayer.BASELINE_PATHS
-            )
-            name, dist_to_baseline2 = map_api.get_distance_to_nearest_map_object(
-                point, SemanticMapLayer.LANE_CONNECTOR
-            )
+            _, dist_to_baseline1 = map_api.get_distance_to_nearest_map_object(point, SemanticMapLayer.BASELINE_PATHS)
+            name, dist_to_baseline2 = map_api.get_distance_to_nearest_map_object(point, SemanticMapLayer.LANE_CONNECTOR)
             dist_to_baseline = min(dist_to_baseline1, dist_to_baseline2) * 10
             # dist_to_baseline, obj = dist_to_baseline1*10, obj1 if dist_to_baseline1 < dist_to_baseline2 else dist_to_baseline2*10, obj2
             if dist_to_baseline1 < dist_to_baseline2:
                 dist_to_baseline = dist_to_baseline1
-                name, _ = map_api.get_distance_to_nearest_map_object(
-                    point, SemanticMapLayer.LANE
-                )
+                name, _ = map_api.get_distance_to_nearest_map_object(point, SemanticMapLayer.LANE)
                 obj = map_api.get_map_object(name, SemanticMapLayer.LANE)
             else:
                 dist_to_baseline = dist_to_baseline2
@@ -250,9 +219,7 @@ def lane_violation_cost(
     return cost
 
 
-def expert_lane_violation_cost(
-    node: Node, scene: Scene, expert_traj: np.ndarray, timesteps: np.ndarray, cache=None
-):
+def expert_lane_violation_cost(node: Node, scene: Scene, expert_traj: np.ndarray, timesteps: np.ndarray, cache=None):
     position_shift = [
         scene.x_min + (scene.x_max - scene.x_min) / 2,
         scene.y_min + (scene.y_max - scene.y_min) / 2,
@@ -275,13 +242,13 @@ def expert_lane_violation_cost(
         y2 = next_point[1]
         x1 = closest_point[0]
         y1 = closest_point[1]
-        dist_to_baseline = abs(
-            (x2 - x1) * (y1 - position[1]) - (y2 - y1) * (x1 - position[0])
-        ) / np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+        dist_to_baseline = abs((x2 - x1) * (y1 - position[1]) - (y2 - y1) * (x1 - position[0])) / np.sqrt(
+            (x2 - x1) ** 2 + (y2 - y1) ** 2
+        )
 
         dist_to_baseline_cost = dist_to_baseline**4 / 4
 
-        if np.abs((closest_point[2] - heading)) < np.deg2rad(5):
+        if np.abs(closest_point[2] - heading) < np.deg2rad(5):
             heading_cost = 0
         else:
             heading_cost = (closest_point[2] - heading) % (2 * np.pi)
@@ -301,9 +268,7 @@ def reverse_cost(node: Node, timesteps: np.ndarray, cache=None):
     return v
 
 
-def speed_limit_violation_cost(
-    node: Node, scene: Scene, map_api: AbstractMap, timesteps: np.ndarray, cache=None
-):
+def speed_limit_violation_cost(node: Node, scene: Scene, map_api: AbstractMap, timesteps: np.ndarray, cache=None):
     position_shift = [
         scene.x_min + (scene.x_max - scene.x_min) / 2,
         scene.y_min + (scene.y_max - scene.y_min) / 2,
@@ -336,17 +301,13 @@ def speed_limit_violation_cost(
     return violation
 
 
-def distance_to_goal_scaled_velociy_cost(
-    node: Node, goal_pos, timesteps: np.ndarray, cache=None
-):
+def distance_to_goal_scaled_velociy_cost(node: Node, goal_pos, timesteps: np.ndarray, cache=None):
 
     total_scene_length = 20  # including history
     # current_time = np.array([i/2 for i in range(timesteps[0], (timesteps[0] if len(timesteps)==1 else timesteps[1]) + 1)])
     # time_left = total_scene_length - current_time
 
-    goal_vel = (
-        np.linalg.norm(goal_pos, axis=-1) / total_scene_length
-    ) * 0.8  # go a bit slower
+    goal_vel = (np.linalg.norm(goal_pos, axis=-1) / total_scene_length) * 0.8  # go a bit slower
 
     additional_allowable_velocity = max(goal_vel * 0.1, 1)
     max_vel = np.maximum(30 - goal_vel, 10)
@@ -378,9 +339,7 @@ def euclidean_distance(
 ):
     query = Query.relative_position
     if predictions is None:
-        states = query_node_and_node(
-            ego_node, agent_node, [query], timesteps, ego_cache, agent_cache, cache
-        )
+        states = query_node_and_node(ego_node, agent_node, [query], timesteps, ego_cache, agent_cache, cache)
     else:
         states = query_node_and_prediction(
             ego_node,
@@ -410,9 +369,7 @@ def are_colliding(
 
     queries = [Query.relative_position, Query.relative_velocity]
     if predictions is None:
-        cache = query_node_and_node(
-            ego_node, agent_node, queries, timesteps, ego_cache, agent_cache, cache
-        )
+        cache = query_node_and_node(ego_node, agent_node, queries, timesteps, ego_cache, agent_cache, cache)
         rp = np.expand_dims(cache["relative_position"], axis=0)
         rv = np.expand_dims(cache["relative_velocity"], axis=0)
     else:
@@ -467,9 +424,7 @@ def time_to_collision(
 
     queries = [Query.relative_position, Query.relative_velocity]
     if predictions is None:
-        cache = query_node_and_node(
-            ego_node, agent_node, queries, timesteps, ego_cache, agent_cache, cache
-        )
+        cache = query_node_and_node(ego_node, agent_node, queries, timesteps, ego_cache, agent_cache, cache)
         rp = np.expand_dims(cache["relative_position"], axis=0)
         rv = np.expand_dims(cache["relative_velocity"], axis=0)
     else:
@@ -501,9 +456,7 @@ def time_to_collision(
     t_to_collision = t_to_closest_point - t_on_line  # nan if there is no collision
 
     collision_occurs = np.logical_and(t_to_closest_point > 0, dist_close < rr)
-    ttc[collision_occurs] = np.minimum(
-        ttc[collision_occurs], t_to_collision[collision_occurs]
-    )
+    ttc[collision_occurs] = np.minimum(ttc[collision_occurs], t_to_collision[collision_occurs])
     return ttc
 
 
@@ -523,9 +476,7 @@ def time_gap_to_agent(
 
     query = Query.relative_position
     if predictions is None:
-        cache = query_node_and_node(
-            ego_node, agent_node, [query], timesteps, ego_cache, agent_cache, cache
-        )
+        cache = query_node_and_node(ego_node, agent_node, [query], timesteps, ego_cache, agent_cache, cache)
         relative_position = cache["relative_position"]
         relative_position = np.expand_dims(relative_position, axis=0)
     else:
@@ -786,18 +737,12 @@ def _comfort_cost(lon_acc, lat_acc, lon_jerk, jerk, heading_rate, heading_acc):
     max_heading_acc = 1.93
     weight_list = 6 * [1 / 6]
 
-    lon_acc_cost = max(min_lon_acc - lon_acc, lon_acc - max_lon_acc, 0) / (
-        max_lon_acc - min_lon_acc
-    )
+    lon_acc_cost = max(min_lon_acc - lon_acc, lon_acc - max_lon_acc, 0) / (max_lon_acc - min_lon_acc)
     lat_acc_cost = max(abs(lat_acc) - max_lat_acc, 0) / (2 * max_lat_acc)
     lon_jerk_cost = max(abs(lon_jerk) - max_lon_jerk, 0) / (2 * max_lon_jerk)
     jerk_cost = max(abs(jerk) - max_jerk, 0) / (2 * max_jerk)
-    heading_rate_cost = max(abs(heading_rate) - max_heading_rate, 0) / (
-        2 * max_heading_rate
-    )
-    heading_acc_cost = max(abs(heading_acc) - max_heading_acc, 0) / (
-        2 * max_heading_acc
-    )
+    heading_rate_cost = max(abs(heading_rate) - max_heading_rate, 0) / (2 * max_heading_rate)
+    heading_acc_cost = max(abs(heading_acc) - max_heading_acc, 0) / (2 * max_heading_acc)
 
     cost_list = [
         lon_acc_cost,
@@ -807,24 +752,16 @@ def _comfort_cost(lon_acc, lat_acc, lon_jerk, jerk, heading_rate, heading_acc):
         heading_rate_cost,
         heading_acc_cost,
     ]
-    total_cost = sum(
-        [_cost * _weight for _cost, _weight in zip(cost_list, weight_list)]
-    )
+    total_cost = sum(_cost * _weight for _cost, _weight in zip(cost_list, weight_list))
     return total_cost
 
 
-def _distance_to_agent_cost(
-    rotated_relative_position, rotated_relative_velocity, vi_epsilon, vo_epsilon
-):
+def _distance_to_agent_cost(rotated_relative_position, rotated_relative_velocity, vi_epsilon, vo_epsilon):
     exp_rotated_relative_velocity = 1 + np.exp(rotated_relative_velocity)
     rotated_relative_position = rotated_relative_position**2
     expterm = (
-        rotated_relative_position[:, :, 0]
-        * exp_rotated_relative_velocity[:, :, 0]
-        * vi_epsilon
-        + rotated_relative_position[:, :, 1]
-        * exp_rotated_relative_velocity[:, :, 1]
-        * vo_epsilon
+        rotated_relative_position[:, :, 0] * exp_rotated_relative_velocity[:, :, 0] * vi_epsilon
+        + rotated_relative_position[:, :, 1] * exp_rotated_relative_velocity[:, :, 1] * vo_epsilon
     )
     rbf = np.exp(-0.5 * expterm)
 

@@ -13,10 +13,7 @@ from nuplan.common.actor_state.state_representation import StateSE2, TimePoint
 from nuplan.common.actor_state.tracked_objects import TrackedObjects
 from nuplan.common.actor_state.tracked_objects_types import TrackedObjectType
 from nuplan.common.actor_state.waypoint import Waypoint
-from nuplan.common.maps.maps_datatypes import (
-    TrafficLightStatusData,
-    TrafficLightStatusType,
-)
+from nuplan.common.maps.maps_datatypes import TrafficLightStatusData, TrafficLightStatusType
 from nuplan.common.maps.nuplan_map.nuplan_map import NuPlanMap
 from nuplan.common.utils.split_state import SplitState
 from nuplan.planning.simulation.observation.observation_type import DetectionsTracks
@@ -45,9 +42,7 @@ class FaultyDetectionsTracks(DetectionsTracks):
 
     @property
     def active_failures(self):
-        return (
-            set.union(*self.failures_by_token.values()) if self.has_failures else set()
-        )
+        return set.union(*self.failures_by_token.values()) if self.has_failures else set()
 
 
 class FaultyEgoState(EgoState):

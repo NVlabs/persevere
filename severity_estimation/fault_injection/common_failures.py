@@ -5,18 +5,12 @@ import numpy as np
 from nuplan.common.actor_state.agent import Agent
 from nuplan.common.actor_state.scene_object import SceneObjectMetadata
 from nuplan.common.actor_state.state_representation import Point2D
+from nuplan.common.actor_state.tracked_objects import TrackedObjects
 from nuplan.common.maps.maps_datatypes import SemanticMapLayer, TrafficLightStatusType
 from shapely.geometry import Point
 from shapely.ops import nearest_points
-from nuplan.common.actor_state.tracked_objects import TrackedObjects
-from severity_estimation.fault_injection.datatypes import (
-    Number,
-    Angle,
-    Constant,
-    Offset,
-    Position,
-    Size,
-)
+
+from severity_estimation.fault_injection.datatypes import Angle, Constant, Number, Offset, Position, Size
 from severity_estimation.fault_injection.failures import FailureGenerator, FaultyState
 from severity_estimation.fault_injection.utils import (
     clear_agent_cache,
@@ -40,9 +34,7 @@ class MissedObstacle(FailureGenerator):
         tracked_objects = state.detections_tracks.tracked_objects.tracked_objects
         removed = remove_agent_from(tracked_objects, self._target_token)
         if removed:
-            state.detections_tracks.failures_by_token[self._target_token].add(
-                self.__class__.__name__
-            )
+            state.detections_tracks.failures_by_token[self._target_token].add(self.__class__.__name__)
 
 
 class Misdetection(FailureGenerator):
@@ -62,9 +54,7 @@ class Misdetection(FailureGenerator):
         self._velocity_ratio = velocity_ratio
         if object_type is not None:
             self._category = object_type.lower()
-            assert (
-                self._category in FailureGenerator.OBJECT_TYPES
-            ), f"Invalid object type {object_type}"
+            assert self._category in FailureGenerator.OBJECT_TYPES, f"Invalid object type {object_type}"
         else:
             self._category = None
 
@@ -79,12 +69,8 @@ class Misdetection(FailureGenerator):
         vel_magnitude = self._velocity_ratio.get()
         agent = find_agent(detection_tracks.tracked_objects, self._target_token)
         if agent is not None:
-            mutate_agent(
-                agent, offset, shape_ratio, rotation, vel_magnitude, self._category
-            )
-            state.detections_tracks.failures_by_token[self._target_token].add(
-                self.__class__.__name__
-            )
+            mutate_agent(agent, offset, shape_ratio, rotation, vel_magnitude, self._category)
+            state.detections_tracks.failures_by_token[self._target_token].add(self.__class__.__name__)
 
 
 class GhostObstacle(FailureGenerator):
@@ -103,9 +89,7 @@ class GhostObstacle(FailureGenerator):
         self._velocity_ratio = velocity_ratio
         self._offset = offset
         self._category = object_type.lower()
-        assert (
-            self._category in FailureGenerator.OBJECT_TYPES
-        ), f"Invalid object type {object_type}"
+        assert self._category in FailureGenerator.OBJECT_TYPES, f"Invalid object type {object_type}"
 
     def reset(self):
         self._token = random_token()
@@ -157,9 +141,7 @@ class GhostObstacle(FailureGenerator):
             past_trajectory=None,
         )
         detection_tracks.tracked_objects.append(agent)
-        state.detections_tracks.failures_by_token[self._track_token].add(
-            self.__class__.__name__
-        )
+        state.detections_tracks.failures_by_token[self._track_token].add(self.__class__.__name__)
         # Detection tracks need to be sorted and _ranges_per_type deleted
         detection_tracks.tracked_objects = sorted(
             detection_tracks.tracked_objects, key=lambda agent: agent.tracked_object_type.value  # type: ignore
@@ -212,9 +194,7 @@ class TrafficLightMisdetection(FailureGenerator):
 
 
 class Mislocalization(FailureGenerator):
-    def __init__(
-        self, offset: Union[Offset, Position], rotation: Angle = Angle(Constant(0))
-    ):
+    def __init__(self, offset: Union[Offset, Position], rotation: Angle = Angle(Constant(0))):
         self._offset = offset
         self._rotation = rotation
         self._radius = 2
@@ -240,9 +220,9 @@ class Mislocalization(FailureGenerator):
                 box._center.x + dx,
                 box._center.y + dy,
             )
-            lanes = state.map_api.get_proximal_map_objects(
-                query_pt, self._radius, [SemanticMapLayer.LANE]
-            )[SemanticMapLayer.LANE]
+            lanes = state.map_api.get_proximal_map_objects(query_pt, self._radius, [SemanticMapLayer.LANE])[
+                SemanticMapLayer.LANE
+            ]
             if lanes:
                 pt = Point(query_pt.x, query_pt.y)
                 distances = [l.baseline_path.linestring.distance(pt) for l in lanes]
@@ -264,9 +244,7 @@ class Mislocalization(FailureGenerator):
             agent._box._center.y += dy
             agent._box._center.heading += rotation
             clear_agent_cache(agent)
-            state.detections_tracks.failures_by_token[agent.track_token].add(
-                self.__class__.__name__
-            )
+            state.detections_tracks.failures_by_token[agent.track_token].add(self.__class__.__name__)
 
 
 class Flickering(FailureGenerator):
@@ -276,9 +254,7 @@ class Flickering(FailureGenerator):
         probability: float = 0.25,
         duration: float = 1.0,
     ):
-        assert isinstance(
-            failure, FailureGenerator
-        ), "Failure must be a FailureGenerator"
+        assert isinstance(failure, FailureGenerator), "Failure must be a FailureGenerator"
         assert probability > 0 and probability < 1, "Probability must be in (0, 1)"
         assert duration > 0, "Duration must be positive"
         self._failure = failure
@@ -309,12 +285,8 @@ class Flickering(FailureGenerator):
 
 
 class AtTimestep(FailureGenerator):
-    def __init__(
-        self, failure: FailureGenerator, time_us: int = 0, stop_at: int = float("inf")
-    ):
-        assert isinstance(
-            failure, FailureGenerator
-        ), "Failure must be a FailureGenerator"
+    def __init__(self, failure: FailureGenerator, time_us: int = 0, stop_at: int = float("inf")):
+        assert isinstance(failure, FailureGenerator), "Failure must be a FailureGenerator"
         assert time_us >= 0, "Timestep must be positive"
         self._failure = failure
         self._timestep = time_us
@@ -324,10 +296,7 @@ class AtTimestep(FailureGenerator):
         self._failure.reset()
 
     def __call__(self, state: FaultyState):
-        if (
-            state.ego_state.time_us >= self._timestep
-            and state.ego_state.time_us < self._stop_at
-        ):
+        if state.ego_state.time_us >= self._timestep and state.ego_state.time_us < self._stop_at:
             return self._failure(state)
 
 

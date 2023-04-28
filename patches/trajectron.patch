@@ -1,0 +1,63 @@
+diff --git a/trajectron/environment/environment.py b/trajectron/environment/environment.py
+index 22ddd14..41795a0 100644
+--- a/trajectron/environment/environment.py
++++ b/trajectron/environment/environment.py
+@@ -5,12 +5,13 @@ from .node_type import NodeTypeEnum
+
+
+ class Environment(object):
+-    def __init__(self, node_type_list, standardization, scenes=None, attention_radius=None, robot_type=None):
++    def __init__(self, node_type_list, standardization, scenes=None, attention_radius=None, robot_type=None, dt=None):
+         self.scenes = scenes
+         self.node_type_list = node_type_list
+         self.attention_radius = attention_radius
+         self.NodeType = NodeTypeEnum(node_type_list)
+         self.robot_type = robot_type
++        self.dt = dt
+
+         self.standardization = standardization
+         self.standardize_param_memo = dict()
+diff --git a/trajectron/environment/scene_graph.py b/trajectron/environment/scene_graph.py
+index 1113bd4..4d969e9 100644
+--- a/trajectron/environment/scene_graph.py
++++ b/trajectron/environment/scene_graph.py
+@@ -135,10 +135,10 @@ class TemporalSceneGraph(object):
+         position_cube = np.full((total_timesteps, N, 2), np.nan)
+
+         adj_cube = np.zeros((total_timesteps, N, N), dtype=np.int8)
+-        dist_cube = np.zeros((total_timesteps, N, N), dtype=np.float)
++        dist_cube = np.zeros((total_timesteps, N, N), dtype=float)
+
+         node_type_mat = np.zeros((N, N), dtype=np.int8)
+-        node_attention_mat = np.zeros((N, N), dtype=np.float)
++        node_attention_mat = np.zeros((N, N), dtype=float)
+
+         for node_idx, node in enumerate(nodes):
+             if online:
+diff --git a/trajectron/model/model_registrar.py b/trajectron/model/model_registrar.py
+index 111a8ab..68ff692 100644
+--- a/trajectron/model/model_registrar.py
++++ b/trajectron/model/model_registrar.py
+@@ -57,17 +57,17 @@ class ModelRegistrar(nn.Module):
+
+         torch.save(self.model_dict, save_path)
+
+-    def load_models(self, iter_num):
++    def load_models(self, iter_num, verbose=False):
+         self.model_dict.clear()
+
+         save_path = os.path.join(self.model_dir,
+                                  'model_registrar-%d.pt' % iter_num)
+
+-        print('')
+-        print('Loading from ' + save_path)
++        if verbose:
++            print('\nLoading from ' + save_path)
+         self.model_dict = torch.load(save_path, map_location=self.device)
+-        print('Loaded!')
+-        print('')
++        if verbose:
++            print('Loaded!\n')
+
+     def to(self, device):
+         for name, model in self.model_dict.items():

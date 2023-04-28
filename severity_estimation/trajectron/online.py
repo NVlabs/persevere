@@ -10,4 +10,3 @@ from model import Trajectron # isort:skip
 from model.model_registrar import ModelRegistrar # isort:skip
 from model.online.online_trajectron import OnlineTrajectron # isort:skip
 # fmt: on
-

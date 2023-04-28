@@ -73,9 +73,7 @@ class DynUnicycleCAvoid(dynamics.ControlAndDisturbanceAffineDynamics):
                 hi=jnp.array([pursuer_max_steering, pursuer_accel_bounds[1]]),
             )
 
-        super().__init__(
-            control_mode, disturbance_mode, control_space, disturbance_space
-        )
+        super().__init__(control_mode, disturbance_mode, control_space, disturbance_space)
 
     def open_loop_dynamics(self, state, time):
         _, _, psiR, vA, vB = state

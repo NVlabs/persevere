@@ -10,12 +10,10 @@ from nuplan.planning.simulation.trajectory.abstract_trajectory import AbstractTr
 
 from severity_estimation.cost.cost_util import CostUtil
 from severity_estimation.hamilton_jacobi.hj_severity import HJSeverity
-from severity_estimation.planner.hypothesis.generator import (
-    HypothesisGenerator,
-    TraffcRuleViolation,
-)
+from severity_estimation.planner.hypothesis.generator import HypothesisGenerator, TraffcRuleViolation
 from severity_estimation.planner.risk_planner_report import RiskPlannerReport
 from severity_estimation.planner.trajectron_manager import TrajectronManager
+
 # from severity_estimation.planner.trajectron_manager_online import TrajectronManager
 
 
@@ -63,9 +61,7 @@ class PredictionRiskPlanner(IDMPlanner):
             cost = 1.0
         return cost
 
-    def _compute_costs(
-        self, cost_fcn, predictions, hyp_predictions, violations, prediction_timesteps
-    ):
+    def _compute_costs(self, cost_fcn, predictions, hyp_predictions, violations, prediction_timesteps):
         start_t = time.perf_counter()
         base = cost_fcn(
             self._trajectron.base_scene.scene,
@@ -82,9 +78,7 @@ class PredictionRiskPlanner(IDMPlanner):
             split_agents=False,
         )
         base_costs, hyp_costs = np.amax(base, axis=1), np.amax(hyp, axis=1)
-        violation_cost = self._violations_cost(
-            hyp_predictions, violations, prediction_timesteps
-        )
+        violation_cost = self._violations_cost(hyp_predictions, violations, prediction_timesteps)
         cost = {
             "base": base_costs.tolist(),
             "hyp": (hyp_costs + violation_cost).tolist(),
@@ -92,14 +86,11 @@ class PredictionRiskPlanner(IDMPlanner):
         runtime = time.perf_counter() - start_t
         return cost, runtime
 
-    def _compute_risk_costs(
-        self, predictions, hyp_predictions, violations: List[TraffcRuleViolation]
-    ):
+    def _compute_risk_costs(self, predictions, hyp_predictions, violations: List[TraffcRuleViolation]):
         prediction_timesteps = np.array(
             [
                 self._trajectron.last_prediction_time + 1,
-                self._trajectron.last_prediction_time
-                + self._trajectron.prediction_horizon,
+                self._trajectron.last_prediction_time + self._trajectron.prediction_horizon,
             ]
         )
         runtimes = dict()
@@ -144,8 +135,7 @@ class PredictionRiskPlanner(IDMPlanner):
         prediction_timesteps = np.array(
             [
                 self._trajectron.last_prediction_time + 1,
-                self._trajectron.last_prediction_time
-                + self._trajectron.prediction_horizon,
+                self._trajectron.last_prediction_time + self._trajectron.prediction_horizon,
             ]
         )
         start_t = time.perf_counter()
@@ -165,11 +155,9 @@ class PredictionRiskPlanner(IDMPlanner):
         runtime = time.perf_counter() - start_t
         return cost, runtime
 
-    def compute_planner_trajectory(
-        self, current_input: List[PlannerInput]
-    ) -> List[AbstractTrajectory]:
+    def compute_planner_trajectory(self, current_input: List[PlannerInput]) -> List[AbstractTrajectory]:
         # Ego current state
-        history = current_input[0].history
+        history = current_input.history
         ego_state, observations = history.current_state
         traffic_light_data = history.current_traffic_light
         if not self._initialized:
@@ -179,27 +167,17 @@ class PredictionRiskPlanner(IDMPlanner):
         compute_plan_start_t = time.perf_counter()
         # Compute Trajectory
         start_t = time.perf_counter()
-        occupancy_map, unique_observations = self._construct_occupancy_map(
-            ego_state, observations
-        )
+        occupancy_map, unique_observations = self._construct_occupancy_map(ego_state, observations)
         self._annotate_occupancy_map(traffic_light_data, occupancy_map)
-        trajectory = self._get_planned_trajectory(
-            ego_state, occupancy_map, unique_observations
-        )
+        trajectory = self._get_planned_trajectory(ego_state, occupancy_map, unique_observations)
         self._compute_trajectory_runtimes.append(time.perf_counter() - start_t)
 
         # Generate hypotheses
-        actual_observations = [
-            history.observations[i].tracked_objects for i in range(history.size)
-        ]
-        hyp = self.hyp_generator(
-            history.ego_states, history.observations, history.current_traffic_light
-        )
+        actual_observations = [history.observations[i].tracked_objects for i in range(history.size)]
+        hyp = self.hyp_generator(history.ego_states, history.observations, history.current_traffic_light)
 
         # Predict trajectories
-        self._trajectron.update(
-            history.ego_states, actual_observations, hyp.observations, trajectory
-        )
+        self._trajectron.update(history.ego_states, actual_observations, hyp.observations, trajectory)
         predictions = self._trajectron.predict()
         if predictions is not None:
             # Plot
@@ -212,9 +190,7 @@ class PredictionRiskPlanner(IDMPlanner):
                 predictions.hypothesis,
                 hyp.violations,
             )
-            costs["hj"], runtimes["hj"] = self.compute_hj_reachability_risk(
-                *history.current_state, hyp
-            )
+            costs["hj"], runtimes["hj"] = self.compute_hj_reachability_risk(*history.current_state, hyp)
             costs["cp"], runtimes["cp"] = self.compute_collision_probability(
                 predictions.perceived, predictions.hypothesis
             )
@@ -223,7 +199,7 @@ class PredictionRiskPlanner(IDMPlanner):
             self._timestemps_us[self._trajectron.step] = ego_state.time_point.time_us
 
         self._compute_plan_runtimes.append(time.perf_counter() - compute_plan_start_t)
-        return [trajectory]
+        return trajectory
 
     def generate_planner_report(self, clear_stats: bool = True) -> RiskPlannerReport:
         report = RiskPlannerReport(

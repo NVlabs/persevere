@@ -6,21 +6,15 @@ from pathlib import Path
 import hydra
 from loguru import logger
 from nuplan.planning.nuboard.base.data_class import NuBoardFile
-from nuplan.planning.scenario_builder.nuplan_db.nuplan_scenario_builder import (
-    NuPlanScenarioBuilder,
-)
+from nuplan.planning.scenario_builder.nuplan_db.nuplan_scenario_builder import NuPlanScenarioBuilder
 from nuplan.planning.scenario_builder.scenario_filter import ScenarioFilter
 from nuplan.planning.simulation.callback.multi_callback import MultiCallback
-from nuplan.planning.simulation.callback.serialization_callback import (
-    SerializationCallback,
-)
-from nuplan.planning.simulation.callback.simulation_log_callback import (
-    SimulationLogCallback,
-)
+from nuplan.planning.simulation.callback.serialization_callback import SerializationCallback
+from nuplan.planning.simulation.callback.simulation_log_callback import SimulationLogCallback
 from nuplan.planning.simulation.controller.log_playback import LogPlaybackController
 from nuplan.planning.simulation.observation.tracks_observation import TracksObservation
 from nuplan.planning.simulation.planner.simple_planner import SimplePlanner
-from nuplan.planning.simulation.runner.simulations_runner import SimulationsRunner
+from nuplan.planning.simulation.runner.simulations_runner import SimulationRunner
 from nuplan.planning.simulation.simulation import Simulation, SimulationSetup
 from nuplan.planning.utils.multithreading.worker_sequential import Sequential
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -28,7 +22,9 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 from severity_estimation.fault_injection.simulator import Simulator
 from severity_estimation.utils.scenario_stepper import ScenarioStepper
 
-fmt = "<green>{time:MM.DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan> | <level>{message}</level>"
+fmt = (
+    "<green>{time:MM.DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan> | <level>{message}</level>"
+)
 logger.remove()  # All configured handlers are removed
 logger.add(sys.stderr, format=fmt)
 
@@ -36,9 +32,7 @@ logger.add(sys.stderr, format=fmt)
 def expert_trajectory(cfg, scenario, callbacks=MultiCallback([])) -> None:
     observations = TracksObservation(scenario=scenario)
     ego_controller = LogPlaybackController(scenario=scenario)
-    sim_manager = ScenarioStepper(
-        scenario=scenario, max_duration=cfg.simulation.max_duration
-    )
+    sim_manager = ScenarioStepper(scenario=scenario, max_duration=cfg.simulation.max_duration)
     simulation_setup = SimulationSetup(
         time_controller=sim_manager,
         observations=observations,
@@ -51,7 +45,7 @@ def expert_trajectory(cfg, scenario, callbacks=MultiCallback([])) -> None:
         simulation_history_buffer_duration=cfg.simulation.simulation_history_buffer_duration,
     )
     planner = SimplePlanner(2, 0.5, [0, 0])
-    runner = SimulationsRunner([simulation], planner)
+    runner = SimulationRunner(simulation, planner)
     runner.run()
 
 
@@ -72,24 +66,10 @@ def main_app(cfg: DictConfig) -> None:
             remove_invalid_goals=False,
             shuffle=False,
             timestamp_threshold_s=None,
-        )
-    elif isinstance(cfg.scenarios, DictConfig):
-        filter = ScenarioFilter(
-            scenario_types=cfg.scenarios.scenario_types,
-            scenario_tokens=None,
-            log_names=None,
-            map_names=None,
-            num_scenarios_per_type=cfg.scenarios.limit_scenarios_per_type,
-            limit_total_scenarios=cfg.scenarios.limit_total_scenarios,
-            expand_scenarios=False,
-            remove_invalid_goals=False,
-            shuffle=False,
-            timestamp_threshold_s=None,
+            ego_displacement_minimum_m=None,
         )
     else:
-        raise ValueError(
-            "Scenario selection must be either a list of scenarios or a filter configuration"
-        )
+        raise ValueError("Scenario selection must be a list of scenarios")
 
     scenario_builder = NuPlanScenarioBuilder(
         data_root=cfg.nuplan.DATA_ROOT,
@@ -141,9 +121,7 @@ def main_app(cfg: DictConfig) -> None:
         start_time = time.perf_counter()
         if avg_runtime is not None:
             avg = f"{datetime.timedelta(seconds=avg_runtime)} /it"
-            etc = (
-                f"{datetime.timedelta(seconds=avg_runtime * (num_scenarios - idx))} ETC"
-            )
+            etc = f"{datetime.timedelta(seconds=avg_runtime * (num_scenarios - idx))} ETC"
         else:
             avg, etc = "N/A", "N/A"
         logger.info(
@@ -155,9 +133,7 @@ def main_app(cfg: DictConfig) -> None:
     with open(output_dir / "config.yaml", "w", encoding="utf-8") as f:
         OmegaConf.save(cfg, f)
 
-    logger.info(
-        f"Done!\nYou can visualize results with:\n > poetry run viz {output_dir} --nuboard"
-    )
+    logger.info(f"Done!\nYou can visualize results with:\n > poetry run viz {output_dir} --nuboard")
 
 
 if __name__ == "__main__":

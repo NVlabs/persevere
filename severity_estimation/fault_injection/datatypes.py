@@ -29,9 +29,7 @@ class Size(Parameter):
     def get(self):
         return Size(
             width=max(self.MIN_SIZE, self.width + np.random.normal(0, self.noise_std)),
-            length=max(
-                self.MIN_SIZE, self.length + np.random.normal(0, self.noise_std)
-            ),
+            length=max(self.MIN_SIZE, self.length + np.random.normal(0, self.noise_std)),
         )
 
 

@@ -82,8 +82,6 @@ def extrema_over_scene(
             extrema_result = np.zeros((second_dim, first_dim)) + initial_extrema
         except:
             extrema_result = np.zeros((1, first_dim)) + initial_extrema
-            
-
 
     if agent_caches is None:
         agent_caches = {}
@@ -122,8 +120,6 @@ def extrema_over_scene(
             extrema_result[agent_node] = result
         else:
             valid_ind = ~np.isnan(result)
-            extrema_result[valid_ind] = operation(
-                extrema_result[valid_ind], result[valid_ind]
-            )
+            extrema_result[valid_ind] = operation(extrema_result[valid_ind], result[valid_ind])
 
     return extrema_result

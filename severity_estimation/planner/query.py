@@ -46,22 +46,12 @@ class Query:
     # For 2 nodes (name, sub query, ego query, agent query)
     relative_position = q(("relative_position", (), (position,), (position,)))
     relative_velocity = q(("relative_velocity", (), (velocity,), (velocity,)))
-    relative_acceleration = q(
-        ("relative_acceleration", (), (acceleration,), (acceleration,))
-    )
+    relative_acceleration = q(("relative_acceleration", (), (acceleration,), (acceleration,)))
     relative_heading = q(("relative_heading", (), (heading,), (heading,)))
-    true_relative_position = q(
-        ("true_relative_position", (), (position,), (true_position,))
-    )
-    true_relative_velocity = q(
-        ("true_relative_velocity", (), (velocity,), (true_velocity,))
-    )
-    rotated_relative_position = q(
-        ("rotated_relative_position", (relative_position,), (rotation_matrix,), ())
-    )
-    rotated_relative_velocity = q(
-        ("rotated_relative_velocity", (relative_velocity,), (rotation_matrix,), ())
-    )
+    true_relative_position = q(("true_relative_position", (), (position,), (true_position,)))
+    true_relative_velocity = q(("true_relative_velocity", (), (velocity,), (true_velocity,)))
+    rotated_relative_position = q(("rotated_relative_position", (relative_position,), (rotation_matrix,), ()))
+    rotated_relative_velocity = q(("rotated_relative_velocity", (relative_velocity,), (rotation_matrix,), ()))
     rotated_relative_acceleration = q(
         (
             "rotated_relative_acceleration",

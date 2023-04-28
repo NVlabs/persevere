@@ -7,9 +7,7 @@ from severity_estimation.planner.query import Query
 from severity_estimation.trajectron.datatypes import Node
 
 
-def single_query(
-    node: Node, query: Query.q, timesteps: np.ndarray, predictions=None, states=None
-):
+def single_query(node: Node, query: Query.q, timesteps: np.ndarray, predictions=None, states=None):
     if predictions is None:
         return query_node(node, query, timesteps, states)[str(query)]
     else:
@@ -88,9 +86,7 @@ def query_prediction(
     predictions: Dict,
     states=None,
 ):
-    queries, timesteps, states = _initialize(
-        node, queries, timesteps, predictions, states
-    )
+    queries, timesteps, states = _initialize(node, queries, timesteps, predictions, states)
 
     for query in queries:
         if str(query) in states.keys():
@@ -104,15 +100,11 @@ def query_prediction(
             states[query_name] = true_states[str(sub_queries[0])]
 
         elif query == Query.position:
-            agent_pos = states["predictions"][
-                0, :, 0 : timesteps[1] - timesteps[0] + 1, :
-            ]
+            agent_pos = states["predictions"][0, :, 0 : timesteps[1] - timesteps[0] + 1, :]
             states[query_name] = agent_pos
 
         elif query == Query.velocity:
-            states = query_prediction(
-                node, (Query.position,), timesteps, predictions, states
-            )
+            states = query_prediction(node, (Query.position,), timesteps, predictions, states)
             agent_pos = states["position"]
             n_repeat = agent_pos.shape[0]
             prev_timestep = np.array([timesteps[0] - 1])
@@ -157,9 +149,7 @@ def query_prediction(
             true_pos = states[str(sub_queries[0])]
             gmm = states["predictions"]
             weighted_mean = states[str(sub_queries[1])]
-            likelihood = np.exp(
-                gmm.log_prob(value=torch.tensor(true_pos))[0, 0].numpy()
-            )
+            likelihood = np.exp(gmm.log_prob(value=torch.tensor(true_pos))[0, 0].numpy())
             likelihood[np.isnan(likelihood)] = np.inf
             states[query_name] = likelihood
 
@@ -208,9 +198,7 @@ def query_node_and_node(
             Query.relative_acceleration,
             Query.relative_heading,
         ]:
-            states[query_name] = (
-                agent_states[str(agent_queries[0])] - ego_states[str(ego_queries[0])]
-            )
+            states[query_name] = agent_states[str(agent_queries[0])] - ego_states[str(ego_queries[0])]
         elif query in [
             Query.rotated_relative_position,
             Query.rotated_relative_velocity,
@@ -256,9 +244,7 @@ def query_node_and_prediction(
         agent_queries = query(3)
 
         ego_states = query_node(ego_node, ego_queries, timesteps, ego_states)
-        agent_states = query_prediction(
-            agent_node, agent_queries, timesteps, predictions, agent_states
-        )
+        agent_states = query_prediction(agent_node, agent_queries, timesteps, predictions, agent_states)
         states = query_node_and_prediction(
             ego_node,
             agent_node,
@@ -277,9 +263,7 @@ def query_node_and_prediction(
             Query.true_relative_position,
             Query.true_relative_velocity,
         ]:
-            states[query_name] = (
-                agent_states[str(agent_queries[0])] - ego_states[str(ego_queries[0])]
-            )
+            states[query_name] = agent_states[str(agent_queries[0])] - ego_states[str(ego_queries[0])]
         elif query in [
             Query.rotated_relative_position,
             Query.rotated_relative_velocity,
@@ -319,9 +303,7 @@ def _initialize_two(
             states["predictions"] = predictions[agent_node]
         assert states["ego_node"] == ego_node, "Node in cache doesn't match request"
         assert states["agent_node"] == agent_node, "Node in cache doesn't match request"
-        assert (
-            states["timesteps"] == timesteps
-        ).all(), "Timesteps in cache doesn't match request"
+        assert (states["timesteps"] == timesteps).all(), "Timesteps in cache doesn't match request"
 
     return queries, timesteps, ego_states, agent_states, states
 
@@ -351,9 +333,7 @@ def _initialize_queries(queries: List[Query.q]):
     return queries
 
 
-def _initialize_states(
-    node: Node, timesteps: np.ndarray, predictions=None, states=None
-):
+def _initialize_states(node: Node, timesteps: np.ndarray, predictions=None, states=None):
     if states is None:  # if not cached state is provided, initialize one
         states = {}
         states["node"] = node
@@ -361,7 +341,5 @@ def _initialize_states(
         if predictions is not None:
             states["predictions"] = predictions[node]
     assert states["node"] == node, "Node in cache doesn't match request"
-    assert (
-        states["timesteps"] == timesteps
-    ).all(), "Timesteps in cache doesn't match request"
+    assert (states["timesteps"] == timesteps).all(), "Timesteps in cache doesn't match request"
     return states

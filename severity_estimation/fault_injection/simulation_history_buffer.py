@@ -6,11 +6,7 @@ from typing import Deque, List, Optional, Tuple, Type
 from nuplan.common.actor_state.ego_state import EgoState
 from nuplan.common.maps.maps_datatypes import TrafficLightStatusData
 from nuplan.planning.scenario_builder.abstract_scenario import AbstractScenario
-from nuplan.planning.simulation.observation.observation_type import (
-    DetectionsTracks,
-    Observation,
-    Sensors,
-)
+from nuplan.planning.simulation.observation.observation_type import DetectionsTracks, Observation, Sensors
 
 
 class SimulationHistoryBuffer:
@@ -110,9 +106,7 @@ class SimulationHistoryBuffer:
         Sets the sample interval of the buffer, raises if the sample interval was not None
         :param sample_interval: The sample interval of the buffer
         """
-        assert (
-            self._sample_interval is None
-        ), "Can't overwrite a pre-existing sample-interval!"
+        assert self._sample_interval is None, "Can't overwrite a pre-existing sample-interval!"
         self._sample_interval = sample_interval
 
     @property
@@ -166,9 +160,7 @@ class SimulationHistoryBuffer:
         :param observations: an observations list
         """
         if len(ego_states) != len(observations):
-            raise ValueError(
-                f"Ego and observations are not the same length {len(ego_states) != len(observations)}!"
-            )
+            raise ValueError(f"Ego and observations are not the same length {len(ego_states) != len(observations)}!")
         self._ego_state_buffer.extend(ego_states)
         self._observations_buffer.extend(observations)
         self._traffic_light_buffer.extend(traffic_light_data)
@@ -197,15 +189,9 @@ class SimulationHistoryBuffer:
         :param sample_interval: [s] the time interval between each sample, if given
         :return: SimulationHistoryBuffer
         """
-        ego_state_buffer: Deque[EgoState] = deque(
-            ego_states[-buffer_size:], maxlen=buffer_size
-        )
-        observations_buffer: Deque[Observation] = deque(
-            observations[-buffer_size:], maxlen=buffer_size
-        )
-        traffic_light_buffer: Deque[TrafficLightStatusData] = deque(
-            traffic_lights[-buffer_size:], maxlen=buffer_size
-        )
+        ego_state_buffer: Deque[EgoState] = deque(ego_states[-buffer_size:], maxlen=buffer_size)
+        observations_buffer: Deque[Observation] = deque(observations[-buffer_size:], maxlen=buffer_size)
+        traffic_light_buffer: Deque[TrafficLightStatusData] = deque(traffic_lights[-buffer_size:], maxlen=buffer_size)
 
         return cls(
             ego_state_buffer=ego_state_buffer,

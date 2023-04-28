@@ -1,25 +1,14 @@
+from copy import deepcopy
 from typing import Any, Generator, Optional, Tuple, Type
 
 from loguru import logger
 from nuplan.common.actor_state.ego_state import EgoState
-from nuplan.common.maps.maps_datatypes import (
-    TrafficLightStatusData,
-    TrafficLightStatusType,
-)
+from nuplan.common.maps.maps_datatypes import TrafficLightStatusData, TrafficLightStatusType
 from nuplan.planning.scenario_builder.abstract_scenario import AbstractScenario
 from nuplan.planning.simulation.callback.abstract_callback import AbstractCallback
-from nuplan.planning.simulation.history.simulation_history import (
-    SimulationHistorySample,
-)
-from nuplan.planning.simulation.observation.observation_type import (
-    DetectionsTracks,
-    Observation,
-    Sensors,
-)
-from nuplan.planning.simulation.planner.abstract_planner import (
-    PlannerInitialization,
-    PlannerInput,
-)
+from nuplan.planning.simulation.history.simulation_history import SimulationHistorySample
+from nuplan.planning.simulation.observation.observation_type import DetectionsTracks, Observation, Sensors
+from nuplan.planning.simulation.planner.abstract_planner import PlannerInitialization, PlannerInput
 from nuplan.planning.simulation.simulation import Simulation
 from nuplan.planning.simulation.simulation_setup import SimulationSetup
 from nuplan.planning.simulation.trajectory.abstract_trajectory import AbstractTrajectory
@@ -31,10 +20,7 @@ from severity_estimation.fault_injection.failures import (
     FaultyState,
     FaultyTrafficLightStatusData,
 )
-from copy import deepcopy
-from severity_estimation.fault_injection.simulation_history_buffer import (
-    SimulationHistoryBuffer,
-)
+from severity_estimation.fault_injection.simulation_history_buffer import SimulationHistoryBuffer
 
 
 class Simulator(Simulation):
@@ -83,8 +69,7 @@ class Simulator(Simulation):
     ) -> FaultyState:
         if traffic_lights is not None:
             faulty_traffic_lights = [
-                FaultyTrafficLightStatusData.from_traffic_light_status_data(tl)
-                for tl in traffic_lights
+                FaultyTrafficLightStatusData.from_traffic_light_status_data(tl) for tl in traffic_lights
             ]
         else:
             faulty_traffic_lights = None
@@ -109,23 +94,13 @@ class Simulator(Simulation):
         elif observation_type == Sensors:
             observation_getter = scenario.get_past_sensors
         else:
-            raise ValueError(
-                f"No matching observation type for {observation_type} for history!"
-            )
-        past_observation = list(
-            observation_getter(
-                iteration=0, time_horizon=buffer_duration, num_samples=buffer_size
-            )
-        )
+            raise ValueError(f"No matching observation type for {observation_type} for history!")
+        past_observation = list(observation_getter(iteration=0, time_horizon=buffer_duration, num_samples=buffer_size))
         past_ego_states = list(
-            scenario.get_ego_past_trajectory(
-                iteration=0, time_horizon=buffer_duration, num_samples=buffer_size
-            )
+            scenario.get_ego_past_trajectory(iteration=0, time_horizon=buffer_duration, num_samples=buffer_size)
         )
         traffic_lights = list(
-            scenario.get_past_traffic_light_status(
-                iteration=0, time_horizon=buffer_duration, num_samples=buffer_size
-            )
+            scenario.get_past_traffic_light_status(iteration=0, time_horizon=buffer_duration, num_samples=buffer_size)
         )
         faulty_states = [
             self._preprocess_observation(ego, obs, tl)
@@ -137,7 +112,7 @@ class Simulator(Simulation):
             ego_states=[s.ego_state for s in faulty_states],
             observations=[s.detections_tracks for s in faulty_states],
             traffic_lights=[s.traffic_lights for s in faulty_states],
-            sample_interval=scenario.database_interval,
+            # sample_interval=scenario.database_interval,
         )
 
     def initialize(self) -> PlannerInitialization:
@@ -159,7 +134,7 @@ class Simulator(Simulation):
         self._observations.initialize()
 
         # Initialize controller
-        self._ego_controller.initialize()
+        # self._ego_controller.initialize()
 
         # Extract traffic light status data
         traffic_light_data = self._scenario.get_traffic_light_status_at_iteration(
@@ -185,9 +160,7 @@ class Simulator(Simulation):
             map_api=self._scenario.map_api,
         )
 
-    def _get_traffic_light_status_data(
-        self, state
-    ) -> Generator[TrafficLightStatusData, None, None]:
+    def _get_traffic_light_status_data(self, state) -> Generator[TrafficLightStatusData, None, None]:
         for light in state.traffic_lights:
             yield TrafficLightStatusData(
                 status=light.status,
@@ -204,17 +177,13 @@ class Simulator(Simulation):
             raise RuntimeError("Simulation was not initialized!")
 
         if not self.is_simulation_running():
-            raise RuntimeError(
-                "Simulation is not running, stepping can not be performed!"
-            )
+            raise RuntimeError("Simulation is not running, stepping can not be performed!")
 
         # Extract current state
         iteration = self._time_controller.get_iteration()
 
         # Extract traffic light status data
-        traffic_light_data_ = self._scenario.get_traffic_light_status_at_iteration(
-            iteration.index
-        )
+        traffic_light_data_ = self._scenario.get_traffic_light_status_at_iteration(iteration.index)
         # traffic_light_data = self._get_traffic_light_status_data()
         logger.trace(f"Executing {iteration.index}!")
         return PlannerInput(
@@ -234,15 +203,11 @@ class Simulator(Simulation):
             raise RuntimeError("Simulation was not initialized!")
 
         if not self.is_simulation_running():
-            raise RuntimeError(
-                "Simulation is not running, simulation can not be propagated!"
-            )
+            raise RuntimeError("Simulation is not running, simulation can not be propagated!")
 
         # Measurements
         iteration = self._time_controller.get_iteration()
-        traffic_light_status = list(
-            self._scenario.get_traffic_light_status_at_iteration(iteration.index)
-        )
+        traffic_light_status = list(self._scenario.get_traffic_light_status_at_iteration(iteration.index))
         faulty_state = self._preprocess_observation(
             self._ego_controller.get_state(),
             self._observations.get_observation(),
@@ -266,12 +231,8 @@ class Simulator(Simulation):
 
         # Propagate state
         if next_iteration:
-            self._ego_controller.update_state(
-                iteration, next_iteration, faulty_state.ego_state, trajectory
-            )
-            self._observations.update_observation(
-                iteration, next_iteration, self._history_buffer
-            )
+            self._ego_controller.update_state(iteration, next_iteration, faulty_state.ego_state, trajectory)
+            self._observations.update_observation(iteration, next_iteration, self._history_buffer)
         else:
             self._is_simulation_running = False
 

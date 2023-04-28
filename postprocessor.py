@@ -8,9 +8,9 @@ from enum import Enum
 from itertools import groupby
 from pathlib import Path
 from typing import Dict, List, Optional, Union
-import numpy as np
 
 import msgpack
+import numpy as np
 from loguru import logger
 from omegaconf import DictConfig, OmegaConf
 from sklearn.metrics import confusion_matrix as compute_confusion_matrix
@@ -21,7 +21,9 @@ from severity_estimation.severity.bound_risk_function import risk as bound_risk
 from severity_estimation.severity.copula_risk_function import risk as copula_risk
 from severity_estimation.severity.risk_threshold import RiskThreshold
 
-fmt = "<green>{time:MM.DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan> | <level>{message}</level>"
+fmt = (
+    "<green>{time:MM.DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan> | <level>{message}</level>"
+)
 logger.remove()  # All configured handlers are removed
 logger.add(sys.stderr, format=fmt)
 
@@ -38,29 +40,21 @@ class RiskType(Enum):
 
 
 ConfusionMatrix = namedtuple("ConfusionMatrix", ["tp", "fp", "fn", "tn"])
-SimpleRiskData = namedtuple(
-    "SimpleRiskData", ["risk", "confidence", "timing", "classification"]
-)
-BoundRiskData = namedtuple(
-    "BoundRiskData", ["lower", "upper", "timing", "classification"]
-)
+SimpleRiskData = namedtuple("SimpleRiskData", ["risk", "confidence", "timing", "classification"])
+BoundRiskData = namedtuple("BoundRiskData", ["lower", "upper", "timing", "classification"])
 RiskData = Union[SimpleRiskData, BoundRiskData]
 ParsedResults = Dict[str, Dict[str, ExtRiskPlannerResults]]
 
 
 def classify(results, log, scenario, alg, param, group_by=1):
-    vals = [
-        elem.classification for elem in results.risk[log][scenario][alg][param].values()
-    ]
+    vals = [elem.classification for elem in results.risk[log][scenario][alg][param].values()]
     # pred = any([sum([int(x) for x in g]) >= group_by for _, g in groupby(vals)])
     pred = False
     step = None
     for i in range(len(vals) - group_by + 1):
         if all(vals[i : i + group_by]):
             pred = True
-            step = list(results.risk[log][scenario][alg][param].keys())[
-                i + group_by - 1
-            ]
+            step = list(results.risk[log][scenario][alg][param].keys())[i + group_by - 1]
             break
     gt = bool(results.experiment_results[log][scenario].has_collisions)
     return pred, gt, step
@@ -76,9 +70,7 @@ class PostprocessedResults:
         self.experiment_results: ParsedResults
         self.risk_type: Optional[str] = None
         # [log][scenario][alg][param][step] -> RiskData
-        self.risk: Dict[
-            str, Dict[str, Dict[str, Dict[float, Dict[int, RiskData]]]]
-        ] = tree()
+        self.risk: Dict[str, Dict[str, Dict[str, Dict[float, Dict[int, RiskData]]]]] = tree()
         # [alg][param] -> ConfusionMatrix
         self.confusion_matrix: Optional[Dict[str, Dict[float, ConfusionMatrix]]] = None
 
@@ -86,9 +78,7 @@ class PostprocessedResults:
         return {
             "experiment_results": dict(self.experiment_results),
             "risk": dict(self.risk),
-            "confusion_matrix": dict(self.confusion_matrix)
-            if self.confusion_matrix
-            else None,
+            "confusion_matrix": dict(self.confusion_matrix) if self.confusion_matrix else None,
         }
 
 
@@ -102,12 +92,8 @@ def parse_metrics(cfg, experiment_folder):
                 for metric in metrics:
                     if metric["metric_computator"] == "collisions_statistics":
                         num_collision = metric["number_collisions_stat_value"]
-                        earliest_collision_timestamp = metric[
-                            "earliest_collision_timestamp_stat_value"
-                        ]
-                        assert (
-                            len(num_collision) == 1
-                        ), "There should be only one collision value"
+                        earliest_collision_timestamp = metric["earliest_collision_timestamp_stat_value"]
+                        assert len(num_collision) == 1, "There should be only one collision value"
                         # planner = metric["planner_name"]
                         log = metric["log_name"]
                         scenario = metric["scenario_name"]
@@ -156,14 +142,12 @@ def _postprocess_copula_based_metric(
         for scenario in results.experiment_results[log]
     ]
     n = len(risk_aversion) * sum(steps)
-    th = RiskThreshold(risk_threshold.thresholds, risk_threshold.labels)
+    th = risk_threshold
     with tqdm(total=n, desc=f"{key.upper(): <4}") as pbar:
         for q in risk_aversion:
             for log in results.experiment_results:
                 for scenario in results.experiment_results[log]:
-                    for step, data in results.experiment_results[log][
-                        scenario
-                    ].risk_costs.items():
+                    for step, data in results.experiment_results[log][scenario].risk_costs.items():
                         base = data[key]["base"]
                         hyp = data[key]["hyp"]
                         start_t = time.perf_counter()
@@ -171,15 +155,12 @@ def _postprocess_copula_based_metric(
                             base,
                             hyp,
                             risk_aversion=q,
-                            risk_threshold=risk_threshold,
+                            risk_threshold=th,
                             copula="empirical",
                         )
                         end_t = time.perf_counter()
                         results.risk[log][scenario][key][q][step] = SimpleRiskData(
-                            risk.risk,
-                            risk.confidence,
-                            end_t - start_t,
-                            th.membership(risk.risk) == th.highest,
+                            risk.risk, risk.confidence, end_t - start_t, risk.risk > th
                         )
                         pbar.update(1)
 
@@ -202,9 +183,7 @@ def _postprocess_bound_based_metric(
         for q in risk_aversion:
             for log in results.experiment_results:
                 for scenario in results.experiment_results[log]:
-                    for step, data in results.experiment_results[log][
-                        scenario
-                    ].risk_costs.items():
+                    for step, data in results.experiment_results[log][scenario].risk_costs.items():
                         base = data[key]["base"]
                         hyp = data[key]["hyp"]
                         start_t = time.perf_counter()
@@ -219,8 +198,7 @@ def _postprocess_bound_based_metric(
                             risk.LowerBound,
                             risk.UpperBound,
                             end_t - start_t,
-                            risk.UpperBound >= th.thresholds[-1]
-                            and risk.LowerBound >= th.thresholds[-1],
+                            risk.UpperBound >= th.thresholds[-1] and risk.LowerBound >= th.thresholds[-1],
                         )
                         pbar.update(1)
 
@@ -243,16 +221,12 @@ def _postprocess_hj(
         for t in risk_threshold:
             for log in results.experiment_results:
                 for scenario in results.experiment_results[log]:
-                    for step, data in results.experiment_results[log][
-                        scenario
-                    ].risk_costs.items():
+                    for step, data in results.experiment_results[log][scenario].risk_costs.items():
                         base = data[key]["base"]
                         hyp = data[key]["hyp"]
                         # Baseline
                         risk = min(base) if base else float("inf")
-                        results.risk[log][scenario][key_base][t][step] = SimpleRiskData(
-                            risk, 1.0, 0, risk < t
-                        )
+                        results.risk[log][scenario][key_base][t][step] = SimpleRiskData(risk, 1.0, 0, risk < t)
                         # # With Hypothesis
                         # risk = min(hyp) if hyp else float("inf")
                         # results.risk[log][scenario][key_hyp][t][step] = SimpleRiskData(
@@ -278,9 +252,7 @@ def _postprocess_collision_probability(
         for q in risk_aversion:
             for log in results.experiment_results:
                 for scenario in results.experiment_results[log]:
-                    for step, data in results.experiment_results[log][
-                        scenario
-                    ].risk_costs.items():
+                    for step, data in results.experiment_results[log][scenario].risk_costs.items():
                         # fmt: off
                         base = max(data[key]["base"])
                         hyp = max(data[key]["hyp"])
@@ -296,13 +268,7 @@ def _postprocess_collision_probability(
 
 
 def _compute_confusion_matrix(results: PostprocessedResults):
-    n_scenarios = len(
-        [
-            scenario
-            for log in results.experiment_results
-            for scenario in results.experiment_results[log]
-        ]
-    )
+    n_scenarios = len([scenario for log in results.experiment_results for scenario in results.experiment_results[log]])
     if n_scenarios < 2:
         # Not enough scenarios to compute a confusion matrix
         logger.warning("Not enough scenarios to compute a confusion matrix")
@@ -322,18 +288,12 @@ def _compute_confusion_matrix(results: PostprocessedResults):
             pred = labels[alg][param]["pred"]
             gt = labels[alg][param]["gt"]
             try:
-                tn, fp, fn, tp = compute_confusion_matrix(
-                    gt, pred, labels=[False, True]
-                ).ravel()
+                tn, fp, fn, tp = compute_confusion_matrix(gt, pred, labels=[False, True]).ravel()
             except ValueError:
-                logger.warning(
-                    "Something went wrong while computing the confusion matrix"
-                )
+                logger.warning("Something went wrong while computing the confusion matrix")
                 results.confusion_matrix[alg][param] = None
             else:
-                results.confusion_matrix[alg][param] = ConfusionMatrix(
-                    float(tp), float(fp), float(fn), float(tn)
-                )
+                results.confusion_matrix[alg][param] = ConfusionMatrix(float(tp), float(fp), float(fn), float(tn))
 
 
 def postprocess(cfg, experiment_folder: str):
@@ -372,9 +332,7 @@ def postprocess(cfg, experiment_folder: str):
     else:
         raise ValueError(f"Unknown risk type: {cfg.risk.copula.type}")
     _postprocess_hj(results, "hj", cfg.risk.hj.thresholds)
-    _postprocess_collision_probability(
-        results, "cp", cfg.risk.cp.risk_aversion, cfg.risk.cp.threshold
-    )
+    _postprocess_collision_probability(results, "cp", cfg.risk.cp.risk_aversion, cfg.risk.cp.threshold)
     _compute_confusion_matrix(results)
     return results
 
@@ -402,9 +360,7 @@ def main_app() -> None:
     with open(experiment_folder / cfg.results.postprocessed_file, "wb") as handle:
         pickle.dump(postprocessed_results, handle)
 
-    logger.info(
-        f"Done!\nYou can visualize the results by running:\n > poetry run viz {experiment_folder} --nuboard"
-    )
+    logger.info(f"Done!\nYou can visualize the results by running:\n > poetry run viz {experiment_folder} --nuboard")
 
 
 if __name__ == "__main__":

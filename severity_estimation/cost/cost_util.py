@@ -21,9 +21,7 @@ def magnitude(x, y):
 
 class CostUtil:
     @staticmethod
-    def compute_momentum_shape_distance(
-        scene, ego_node, timesteps, prediction_dict=None, split_agents=True
-    ):
+    def compute_momentum_shape_distance(scene, ego_node, timesteps, prediction_dict=None, split_agents=True):
         queries = [
             Query.position,
             Query.velocity,
@@ -64,9 +62,7 @@ class CostUtil:
         return costs
 
     @staticmethod
-    def compute_time_to_collision_cost(
-        scene, ego_node, timesteps, prediction_dict=None, split_agents=True
-    ):
+    def compute_time_to_collision_cost(scene, ego_node, timesteps, prediction_dict=None, split_agents=True):
         queries = [
             Query.position,
             Query.velocity,

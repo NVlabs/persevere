@@ -1,13 +1,12 @@
 import pickle
+from pathlib import Path
 
 import hj_reachability as hj
 import numpy as np
 from hj_reachability import dynamics
 
 from severity_estimation.hamilton_jacobi.system_dynamics import DynUnicycleCAvoid
-from severity_estimation.hamilton_jacobi.utils import (
-    convert_relative_state_to_signed_distance,
-)
+from severity_estimation.hamilton_jacobi.utils import convert_relative_state_to_signed_distance
 
 DEFAULT_CONTROL_BOUNDS = {
     "evader_accel_bounds": [
@@ -52,9 +51,9 @@ class HJSeverity:
     ) -> None:
         assert isinstance(sys_dynamics, dynamics.ControlAndDisturbanceAffineDynamics)
         assert "lower_bound" in grid and "upper_bound" in grid and "num_points" in grid
-        assert len(grid["lower_bound"]) == len(grid["upper_bound"]) and len(
-            grid["num_points"]
-        ) == len(grid["lower_bound"])
+        assert len(grid["lower_bound"]) == len(grid["upper_bound"]) and len(grid["num_points"]) == len(
+            grid["lower_bound"]
+        )
 
         self._sys_dynamics = sys_dynamics
         self._lattice = hj.Grid.from_lattice_parameters_and_boundary_conditions(
@@ -65,9 +64,7 @@ class HJSeverity:
             shape=grid["num_points"],  # number of grid points
             periodic_dims=grid["periodic_dims"],
         )
-        self._init_values = hj.utils.multivmap(
-            value_function, np.arange(self._lattice.ndim)
-        )(self._lattice.states)
+        self._init_values = hj.utils.multivmap(value_function, np.arange(self._lattice.ndim))(self._lattice.states)
         self._target_values = None
         self._time_horizon = None
 
@@ -94,6 +91,8 @@ class HJSeverity:
         return self._lattice.interpolate(self._target_values, state).item()
 
     def save(self, filename):
+        out = Path(filename)
+        out.parent.mkdir(parents=True, exist_ok=True)
         with open(filename, "wb") as f:
             pickle.dump(self, f)
 
