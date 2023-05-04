@@ -1,11 +1,13 @@
+[![arXiv](https://img.shields.io/badge/arXiv-2305.01870-b31b1b.svg)](https://arxiv.org/abs/2305.01870)
 [![NVIDIA Source Code License](https://img.shields.io/badge/license-NSCL-blue.svg)](https://github.com/NVlabs/perp-fail-severity/blob/main/LICENSE.md)
 ![Python 3.9](https://img.shields.io/badge/python-3.9-green.svg)
+
 
 # Perception Failure Severity Estimation
 
 ![Header](/docs/images/header.png)
 
-This repository contains the code for [*"Task-Aware Risk Estimation of Perception Failures for Autonomous Vehicles"*](#), Proceedings of Robotics: Science and Systems (RSS), 2023.
+This repository contains the code for [*"Task-Aware Risk Estimation of Perception Failures for Autonomous Vehicles"*](https://arxiv.org/abs/2305.01870), Proceedings of Robotics: Science and Systems (RSS), 2023.
 
 ## Requirements
 
@@ -158,10 +160,11 @@ This will check that staged and committed files are compliant.
 If you use this code or the dataset, please cite the following paper:
 
 ```
-@article{antonante23rss-perceptionFailureSeverity,
-  title={Task-Aware Risk Estimation of Perception Failures for Autonomous Vehicles},
-  author={P. Antonante, S. Veer, K. Leung, X. Weng, L. Carlone and M. Pavone},
-  year={2023}
+@inproceedings{antonante23rss-perceptionFailureSeverity,
+    title     = {Task-Aware Risk Estimation of Perception Failures for Autonomous Vehicles},
+    author    = {P. Antonante, S. Veer, K. Leung, X. Weng, L. Carlone and M. Pavone},
+    booktitle = {Proceedings of Robotics: Science and Systems},
+    year      = {2023},
 }
 ```
 
