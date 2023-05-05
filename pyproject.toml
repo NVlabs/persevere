@@ -3,7 +3,7 @@ name = "severity_estimation"
 version = "0.1.0"
 description = "Perception Failure Severity Estimation"
 authors = ["Pasquale Antonante"]
-license = "MIT"
+license = "NSCL"
 
 [tool.poetry.dependencies]
 python = "~3.9"
@@ -25,7 +25,6 @@ jax = ">= 0.4.8"
 # jaxlib = { url = "https://storage.googleapis.com/jax-releases/cuda11/jaxlib-0.4.7+cuda11.cudnn86-cp39-cp39-manylinux2014_x86_64.whl" }
 
 # Trajectron deps
-# trajectron-plus-plus  = {path = "../Trajectron-plus-plus", develop = true}
 matplotlib = "^3.5.2"
 casadi = "3.5.5"
 seaborn = "^0.11.2"
@@ -41,7 +40,6 @@ scikit-learn = "^1.1.1"
 torchmetrics = "0.6.2"
 
 # nuPlan deps
-# nuplan-devkit = { git = "https://github.com/motional/nuplan-devkit.git", branch = "nuplan-devkit-v0.3" }
 nuplan-devkit  = {path = "../nuplan-devkit", develop = true}
 Jinja2 = "^3.1.2"
 bokeh = "^2.4.3"
@@ -86,4 +84,3 @@ tools = "tools:cli"
 [tool.poe.tasks]
 format = "black ."
 isort = "isort --recursive ."
-notebook = "poetry run jupyter notebook --no-browser --port=8888"
