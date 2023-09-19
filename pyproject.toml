@@ -35,7 +35,7 @@ orjson = "^3.7.5"
 ncls = "^0.0.65"
 dill = "^0.3.5"
 pathos = "^0.2.9"
-pykalman-bardo = "^0.9.6"
+pykalman-bardo = "^0.9.7"
 scikit-learn = "^1.1.1"
 torchmetrics = "0.6.2"
 
